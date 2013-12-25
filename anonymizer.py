@@ -13,32 +13,46 @@ from ftp_upload import ftpupload
 import socket
 from itertools import combinations
 
-useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
-conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
-att_name = []
-att_tree = []
-treelist = {}
-nodelist = {}
-databack = []
-plotdata = [[],[],[]]
-treesupport = 0
-att_cover = [[],[],[],[],[],[],[],[]]
-
+__DEBUG = False
+gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
+gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
+gl_att_name = []
+# att_tree store root node for each att
+gl_att_tree = []
+# leaf_to_path store leaf node and treepath relations for each att
+gl_leaf_to_path = []
+#databack store all reacord for dataset
+gl_databack = []
+#store data for python plot
+gl_plotdata = [[],[],[]]
+gl_treecover = []
+#store coverage of each att according to  dataset
+gl_att_cover = [[],[],[],[],[],[],[],[]]
 
 def RMERGE_R():
+	return
 
 def RMERGE_T():
+	return
 
 def RMERGE_RT():
+	return
 
 def CLUSTER():
-	
-def readtree():
+	return
+
+def read_tree_file(treename):
 	"read tree data from treefile,store them in treenode and treelist"
-	global treesupport
-	global nodelist
-	global att_cover
-	treefile = open('data/treefile_disease.txt','rU')
+	global gl_treecover
+	global gl_att_tree
+	global gl_leaf_to_path
+
+	treecover = 0
+	leaf_to_path = {}
+	nodelist = {}
+	prefix = 'data/treefile_'
+	postfix = ".txt"
+	treefile = open(prefix + treename + postfix,'rU')
 	nodelist['*'] = GenTree('*')
 	print "Reading Tree"
 	for line in treefile:
@@ -48,25 +62,42 @@ def readtree():
 		line = line.strip()
 		temp = line.split(';')
 		# copy temp
-		treelist[temp[0]] = temp[:]
+		leaf_to_path[temp[0]] = temp[:]
 		temp.reverse()
 		for i, t in enumerate(temp):
 			if not t in nodelist:
 				# always satisfy 
 				nodelist[t] = GenTree(t, nodelist[temp[i - 1]])
-	treesupport = nodelist['*'].getsupport()
-	# att_cover[7] = nodelist['*'].cover
-	
-	print "Support = %d" % treesupport
+	treecover = nodelist['*'].getsupport()
+	print "Nodes No. = %d" % treecover
+	gl_treecover.append(treecover)
+	gl_leaf_to_path.append(leaf_to_path)
+	gl_att_tree.append(nodelist)
+
 	treefile.close()
+
+def readtree():
+	global gl_att_name
+	"read tree data from treefiles,store them in treenode and leaf_to_treepath"	
+	for t in gl_att_name:
+		read_tree_file(t)
+	
 
 def readdata():
 	"read microda for *.txt and store them in {}[]"
-	global databack
-	global att_cover
+	global gl_databack
+	global gl_att_cover
+	global gl_att_name
+	global gl_useratt
+	global gl_conditionatt
 	userfile = open('data/demographics05test.csv','rU')
 	conditionfile = open('data/conditions05.csv','rU')
 	userdata = {}
+	# We selet 3,4,5,6,13,15,15 att from demographics05, and 2 from condition05
+	attlist = [3,4,5,6,13,15,16]
+	for t in attlist:
+		gl_att_name.append(gl_useratt[t])
+	gl_att_name.append(gl_conditionatt[2])
 	print "Reading Data..."
 	for i, line in enumerate(userfile):
 		line = line.strip()
@@ -92,26 +123,24 @@ def readdata():
 			conditiondata[row[1]].append(row)
 		else:
 			conditiondata[row[1]] = [row]
-	attlist = [3,4,5,6,13,15,16]
-
 	hashdata = {}
 	for k, v in userdata.iteritems():
 		if k in conditiondata:
 			temp = []
 			for t in conditiondata[k]:
 				temp.append(t[2])
-				if not t[2] in att_cover[7]:
-					att_cover[7].append(t[2])
+				if not t[2] in gl_att_cover[7]:
+					gl_att_cover[7].append(t[2])
 			hashdata[k] = []
 			for i in range(len(attlist)):
 				index = attlist[i]
 				hashdata[k].append(v[index])
-				if not v[index] in att_cover[i]:
-					att_cover[i].append(v[index])
+				if not v[index] in gl_att_cover[i]:
+					gl_att_cover[i].append(v[index])
 			hashdata[k].append(temp)
 	for k, v in hashdata.iteritems():
-		databack.append(v)
-	pdb.set_trace()
+		gl_databack.append(v)
+	# pdb.set_trace()
 	userfile.close()
 	conditionfile.close()
 
@@ -121,7 +150,7 @@ if __name__ == '__main__':
 	readtree()
 	#read record
 	readdata()
-	pdf.set_trace()
+	pdb.set_trace()
 	'''
 	hostname = socket.gethostname()
 	filetail = datetime.now().strftime('%Y-%m-%d-%H') + '.txt'
