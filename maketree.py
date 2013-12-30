@@ -3,7 +3,7 @@
 import string
 
 #generate tree from treeseed
-def gen_disease_tree():
+def gen_ICD9CODX_tree():
 	treeseed = open('data/treeseed_disease.txt','rU')
 	treefile = open('data/treefile_disease.txt','w')
 
@@ -46,10 +46,20 @@ def gen_disease_tree():
 	treeseed.close()
 	treefile.close()
 
-
 def gen_income_tree():
-
+	"We split this tree by i,100,1000,10000,*(5 layers) min = -40 000, max = 200 000"
+	treefile = open('data/treefile_income.txt','w')
+	for i in range(-40000, 200001):
+		i1 = i / 100
+		i2 = i / 1000
+		i3 = i / 10000
+		temp = '%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i1 * 100 , i1 * 100 + 99, i2*1000,\
+		 i2*1000 + 999, i3*10000, i3*10000 + 9999)
+		treefile.write(temp)
+	treefile.close()
+	return
 
 
 if __name__ == '__main__':
+	gen_income_tree()
 	

@@ -15,7 +15,7 @@ class GenTree:
 			self.value = value
 		if parent != None:
 			self.parent = parent.parent[:]
-			self.parent.insert(0,parent)
+			self.parent.insert(0, parent)
 			parent.child.append(self)
 			self.level = parent.level + 1
 
@@ -37,32 +37,25 @@ class GenTree:
 			self.cover.append(self.value)
 		return self.support
 
-class Trunk:
-	def __init__(self, data, value = ['*'], level = []):
-		
-		self.member = data
-		self.value = value[:]
-		self.level = level[:]
-
-
-class Group:
-	def __init__(self, data, value = ['*'], level = []):
+class Cluster:
+	"Cluster is for cluster based k-anonymity\
+	middle denote generlized value for one cluster"
+	def __init__(self, member, middle = ['*']):
 		self.iloss = 0.0
-		self.member = data
-		self.value = value[:]
-		self.level = level[:]
+		self.member = member
+		self.middle = middle[:]
 
-	def merge_group(self, guest, middle):
-		"merge guest into hostgourp"
-		while guest.member:
-			temp = guest.member.pop()
-			self.member.append(temp)
-		self.value = middle[:]
-
-	def merge_record(self, rtemp, middle):
+	def merge_group(self, record, middle):
 		"merge record into hostgourp"
-		self.member.append(rtemp)
-		self.value = middle[:]
+		while record.member:
+			temp = record.member.pop()
+			self.member.append(temp)
+		self.middle = middle[:]
+
+	def merge_record(self, record, middle):
+		"merge record into hostgourp"
+		self.member.append(record)
+		self.middle = middle[:]
 
 if __name__ == '__main__':
 

@@ -29,6 +29,15 @@ gl_treecover = []
 #store coverage of each att according to  dataset
 gl_att_cover = [[],[],[],[],[],[],[],[]]
 
+def distance():
+	return
+
+def NCP():
+	return
+
+def middle():
+	return
+
 def RMERGE_R():
 	return
 
@@ -38,8 +47,50 @@ def RMERGE_T():
 def RMERGE_RT():
 	return
 
-def CLUSTER():
+def num_analysis(attlist):
+	"plot distribution of attlist"
+	from pylab import *
+	import operator
+	temp = {}
+	for t in attlist:
+		t = int(t)
+		if not t in temp.keys():
+			temp[t] = 1
+		else:
+			temp[t] += 1
+	# sort the dict
+	items = temp.items()
+	items.sort()
+	value = []
+	count = []
+	for k, v  in items:
+		value.append(k)
+		count.append(v)
+	pdb.set_trace()
+	xlabel('value')
+	ylabel('count')
+	plt.hist(count, bins=value, normed=1, histtype='step', rwidth=0.8)
+	# legend(loc='upper left')
+	# grid on
+	grid(True)
+	show()
+	
+def find_best_record(data, cluster):
+
 	return
+
+def find_best_cluster(data, cluster):
+	return
+
+def CLUSTER(data, k):
+	"Group record according to QID distance"
+	global gl_att_tree
+	global gl_treecover
+	global gl_leaf_to_path
+
+	result = []
+
+	return 
 
 def read_tree_file(treename):
 	"read tree data from treefile,store them in treenode and treelist"
@@ -141,6 +192,7 @@ def readdata():
 	for k, v in hashdata.iteritems():
 		gl_databack.append(v)
 	# pdb.set_trace()
+	num_analysis([t[6] for t in gl_databack[:]])
 	userfile.close()
 	conditionfile.close()
 
