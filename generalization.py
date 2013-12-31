@@ -2,7 +2,7 @@
 #coding=utf-8
 
 # logic tree
-class GenTree:
+class GenTree(object):
 	def __init__(self, value = None, parent = None):
 		self.value = ''
 		self.level = 0
@@ -37,7 +37,7 @@ class GenTree:
 			self.cover.append(self.value)
 		return self.support
 
-class Cluster:
+class Cluster(object):
 	"Cluster is for cluster based k-anonymity\
 	middle denote generlized value for one cluster"
 	def __init__(self, member, middle = ['*']):

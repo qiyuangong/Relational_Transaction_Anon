@@ -4,6 +4,7 @@ import string
 
 #generate tree from treeseed
 def gen_ICD9CODX_tree():
+	"disease tree is more complex, so we need treeseed to simplify definition"
 	treeseed = open('data/treeseed_disease.txt','rU')
 	treefile = open('data/treefile_disease.txt','w')
 
@@ -59,7 +60,19 @@ def gen_income_tree():
 	treefile.close()
 	return
 
+def gen_DOBYY_tree():
+	"We define a birth year tree with min = 1900 and max = 2010, and coverage splited by 5, 10, 50 year"
+	treefile = open('data/treefile_DOBYY.txt','w')
+	for i in range(1900, 2011):
+		i1 = i / 5
+		i2 = i / 10
+		i3 = i / 50
+		temp = '%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i1 * 5 , i1 * 5 + 4, i2*10,\
+			 i2*10 + 9, i3*50, i3*50 + 49)
+		treefile.write(temp)
+	treefile.close()
 
 if __name__ == '__main__':
-	gen_income_tree()
+	# gen_income_tree()
+	# gen_DOBYY_tree()
 	
