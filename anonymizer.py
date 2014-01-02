@@ -7,6 +7,7 @@ import random
 import pdb
 import math
 import sys
+import heapq
 from ftp_upload import ftpupload
 import socket
 from pylab import *
@@ -67,6 +68,61 @@ def middle(record1, record2):
 		middle.append(get_LCA(i, record1[i], record2[i]))
 	return middle
 
+def middle(records):
+	"calculat middle of records(list) recursively"
+	len_r = len(records)
+	if len_r == 1:
+		return records[0]
+	elif len_r == 2:
+		return middle(records[0], records[1])
+	else:
+		mid = len_r / 2
+		return middle(records[:mid], records[mid:])
+
+def find_best_KNN(record, k, data):
+	"key fuction of KNN. Find k nearest neighbors of record, remove them from data"
+	# elements = heapq.nsmallest(k,)
+	knn = []
+	elements = []
+	c = cluster(elements)
+	# delete multiple elements from data according to knn list
+	data[:] = [t for i, t in enumerate(data) if i not in knn]
+	return c
+
+def find_best_cluster(record, clusters):
+	"residual assignment. Find best cluster for record."
+	min_distance = 1000000000000
+	min_index = 0
+	best_cluster = clusters[0]
+	for i, t in enumerate(clusters):
+		distance = distance(record, t.middle)
+		if distance < min_distance:
+			min_distance = distance
+			min_index = i
+			best_cluster = t
+	# add record to best cluster
+	return min_index
+
+def CLUSTER(data, k):
+	"Group record according to QID distance. KNN"
+	global gl_att_tree
+	global gl_treecover
+	global gl_leaf_to_path
+
+	clusters = []
+
+	random_list = []
+	for i in range(k):
+		index = random.randrange(len(data))
+		random_list.append(index)
+		c =  find_best_KNN(data[index], k, data)
+		clusters.append(c)
+
+	while len(data) > 0:
+		t = data.pop()
+		c = find_best_cluster(t, clusters)
+	return clusters
+
 def RMERGE_R():
 	return
 
@@ -74,6 +130,16 @@ def RMERGE_T():
 	return
 
 def RMERGE_RT():
+	return
+
+
+def TMERGE_R():
+	return
+
+def TMERGE_T():
+	return
+
+def TMERGE_RT():
 	return
 
 def num_analysis(attlist):
@@ -103,23 +169,6 @@ def num_analysis(attlist):
 	grid(True)
 	show()
 	
-def find_best_record(data, cluster):
-
-	return
-
-def find_best_cluster(data, cluster):
-	return
-
-def CLUSTER(data, k):
-	"Group record according to QID distance"
-	global gl_att_tree
-	global gl_treecover
-	global gl_leaf_to_path
-
-	result = []
-
-	return 
-
 def read_tree_file(treename):
 	"read tree data from treefile,store them in treenode and treelist"
 	global gl_treecover
@@ -163,7 +212,7 @@ def readtree():
 	for t in gl_attlist:
 		gl_att_name.append(gl_useratt[t])
 	gl_att_name.append(gl_conditionatt[2])
-	"read tree data from treefiles,store them in treenode and leaf_to_treepath"	
+	"read tree data from treefiles, store them in treenode and leaf_to_treepath"	
 	for t in gl_att_name:
 		read_tree_file(t)
 	
@@ -174,8 +223,8 @@ def readdata():
 	global gl_att_cover
 	global gl_useratt
 	global gl_conditionatt
-	userfile = open('data/demographics05test.csv','rU')
-	conditionfile = open('data/conditions05.csv','rU')
+	userfile = open('data/demographics05test.csv', 'rU')
+	conditionfile = open('data/conditions05.csv', 'rU')
 	userdata = {}
 	# We selet 3,4,5,6,13,15,15 att from demographics05, and 2 from condition05
 	print "Reading Data..."
@@ -231,7 +280,8 @@ if __name__ == '__main__':
 	readtree()
 	#read record
 	readdata()
-	pdb.set_trace()
+	# pdb.set_trace()
+	
 	'''
 	hostname = socket.gethostname()
 	filetail = datetime.now().strftime('%Y-%m-%d-%H') + '.txt'
@@ -261,4 +311,3 @@ if __name__ == '__main__':
 	ftpupload(plotfilename, filepath)
 	ftpupload(rediroutname, filepath)
 	'''
-	
