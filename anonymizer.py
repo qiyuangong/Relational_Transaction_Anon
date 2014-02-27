@@ -40,9 +40,14 @@ def distance(record, cluster):
 	return distance
 
 def NCP(record, middle):
+	"compute NCP (Normalized Certainty Penalty)"
 	ncp = 0.0
+	# exclude SA values(last one type [])
 	for i in range(len(record) - 1):
-		ncp = gl_att_tree[i][record[i]].support * 1.0  / gl_att_tree[i][middle[i]].support
+		# if support of numerator is 1, then NCP is 0
+		if gl_att_tree[i][record[i]].support == 1:
+			continue
+		ncp += gl_att_tree[i][record[i]].support * 1.0  / gl_att_tree[i][middle[i]].support
 	return ncp
 
 def get_LCA(index, item1, item2):
@@ -63,6 +68,7 @@ def get_LCA(index, item1, item2):
 	return last_LCA
 
 def middle(record1, record2):
+	"compute generalization result of record1 and record2"
 	middle = []
 	for i in range(gl_att_QI):
 		middle.append(get_LCA(i, record1[i], record2[i]))
@@ -79,14 +85,36 @@ def middle(records):
 		mid = len_r / 2
 		return middle(records[:mid], records[mid:])
 
+
+
+def insert_to_knn(knn, k, temp):
+	"insert element(index,distance) pair to knn(list)"
+	# insert sort
+	for i in range(len(knn)):
+		if knn[i][1] > temp[1]:
+			knn.insert(i, temp)
+			break
+	# if knn > k, del last element
+	if knn > k:
+		del knn[-1]
+	# return largest
+	return knn[-1][1]
+
 def find_best_KNN(record, k, data):
 	"key fuction of KNN. Find k nearest neighbors of record, remove them from data"
 	# elements = heapq.nsmallest(k,)
 	knn = []
-	elements = []
-	c = cluster(elements)
-	# delete multiple elements from data according to knn list
-	data[:] = [t for i, t in enumerate(data) if i not in knn]
+	element = []
+
+	max_distance = 1000000000000
+	for i, t in enumerate(clusters):
+		distance  = distance(record, t.middle)
+		id distance < max_distance:
+			temp = [i, distance]
+			max_distance = insert_to_knn(knn, k, temp)
+	c = Cluster(elements)
+	# delete multiple elements from data according to knn index list
+	data[:] = [t for i, t in enumerate(data) if i not in knn[:][1]]
 	return c
 
 def find_best_cluster(record, clusters):
@@ -108,20 +136,25 @@ def CLUSTER(data, k):
 	global gl_att_tree
 	global gl_treecover
 	global gl_leaf_to_path
-
 	clusters = []
-
-	random_list = []
-	for i in range(k):
+	# randomly choose seed and find k-1 nearest records to form cluster with size k
+	while len(data) >= k:
 		index = random.randrange(len(data))
-		random_list.append(index)
 		c =  find_best_KNN(data[index], k, data)
 		clusters.append(c)
-
+	# residual assignment
 	while len(data) > 0:
 		t = data.pop()
-		c = find_best_cluster(t, clusters)
+		cluster_index = find_best_cluster(t, clusters)
+		clusters[cluster_index].append(t)
 	return clusters
+
+def Rum():
+	return
+
+def Tum():
+	return
+
 
 def RMERGE_R():
 	return
