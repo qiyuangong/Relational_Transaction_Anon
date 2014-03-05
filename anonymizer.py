@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 #coding=utf-8
 
-from generalization import *
+from generalization import GenTree, Cluster
 from datetime import datetime
-import random
+from random import randrange
 import pdb
 import math
 import sys
-import heapq
 from ftp_upload import ftpupload
 import socket
-from pylab import *
+# from pylab import *
+
 
 __DEBUG = False
+gl_threshold = 100000
 gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
 gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
 gl_att_name = []
@@ -34,13 +35,19 @@ gl_LCA = []
 
 
 def distance(record, cluster):
-    "return distance between record and cluster" 
+    """return distance between record and cluster"""
     mid = middle(record, cluster.middle)
     distance = NCP(record, mid) + len(cluster.member) * NCP(cluster.middle, mid)
     return distance
 
+def distance(record1, record2):
+    """return distance between record and cluster"""
+    mid = middle(record1, record2)
+    distance = NCP(record1, mid) +  NCP(record2, mid)
+    return distance
+
 def NCP(record, middle):
-    "compute NCP (Normalized Certainty Penalty)"
+    """compute NCP (Normalized Certainty Penalty)"""
     ncp = 0.0
     # exclude SA values(last one type [])
     for i in range(len(record) - 1):
@@ -50,16 +57,18 @@ def NCP(record, middle):
         ncp += gl_att_tree[i][record[i]].support * 1.0  / gl_att_tree[i][middle[i]].support
     return ncp
 
+
 def get_LCA(index, item1, item2):
-    "get lowest commmon ancestor(including themselves)"
+    """get lowest commmon ancestor(including themselves)"""
     # get parent list from 
     if item1 == item2:
         return item1
     parent1 = gl_att_tree[index][item1].parent[:]
     parent2 = gl_att_tree[index][item2].parent[:]
-    parent1.insert(0,item1)
-    parent2.insert(0,item2)
+    parent1.insert(0, item1)
+    parent2.insert(0, item2)
     minlen = min(len(parent1), len(parent2))
+    last_LCA = parent1[-1]
     for i in range(minlen):
         if parent1[-i] == parent2[-i]:
             last_LCA = parent1[-i]
@@ -67,15 +76,17 @@ def get_LCA(index, item1, item2):
             break 
     return last_LCA
 
+
 def middle(record1, record2):
-    "compute generalization result of record1 and record2"
+    """compute generalization result of record1 and record2"""
     middle = []
     for i in range(gl_att_QI):
         middle.append(get_LCA(i, record1[i], record2[i]))
     return middle
 
-def middle(records):
-    "calculat middle of records(list) recursively"
+
+def middle_for_cluster(records):
+    """calculat middle of records(list) recursively"""
     len_r = len(records)
     if len_r == 1:
         return records[0]
@@ -86,38 +97,58 @@ def middle(records):
         return middle(records[:mid], records[mid:])
 
 
-
-def insert_to_knn(knn, k, temp):
-    "insert element(index,distance) pair to knn(list)"
+def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
+    """insert element(index,distance) pair to sorted_tuple(list)"""
     # insert sort
-    for i in range(len(knn)):
-        if knn[i][1] > temp[1]:
-            knn.insert(i, temp)
+    i = 0
+    for i in range(len(sorted_tuple)):
+        if sorted_tuple[i][1] > temp[1]:
             break
-    # if knn > k, del last element
-    if knn > k:
-        del knn[-1]
+    sorted_tuple.insert(i, temp)
+    # if sorted_tuple > k, del last element
+    if len(sorted_tuple) > k:
+        del sorted_tuple[-1]
     # return largest
-    return knn[-1][1]
+    return sorted_tuple[-1][1]
+
+
+def update_to_sorted(sorted_tuple, temp, k=10000000000000):
+    """update element(index,distance) pair to sorted_tuple(list)"""
+    # remove old pair
+    for i in range(len(sorted_tuple)):
+        if sorted_tuple[i][0] == temp[0]:
+            break
+    del sorted_tuple[i]
+    # insert new pair
+    for i in range(len(sorted_tuple)):
+        if sorted_tuple[i][1] > temp[1]:
+            sorted_tuple.insert(i, temp)
+            break
+    # if sorted_tuple > k, del last element
+    if sorted_tuple > k:
+        del sorted_tuple[-1]
+    # return largest
+    return sorted_tuple[-1][1]
 
 def find_best_KNN(record, k, data):
-    "key fuction of KNN. Find k nearest neighbors of record, remove them from data"
+    """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
     # elements = heapq.nsmallest(k,)
     knn = []
     element = []
     max_distance = 1000000000000
-    for i, t in enumerate(clusters):
-        distance  = distance(record, t.middle)
-        id distance < max_distance:
-            temp = [i, distance]
-            max_distance = insert_to_knn(knn, k, temp)
+    for i, t in enumerate(data):
+        dis = distance(record, t)
+        if dis < max_distance:
+            temp = [i, dis]
+            max_distance = insert_to_sorted(knn, temp, k)
     c = Cluster(elements)
     # delete multiple elements from data according to knn index list
     data[:] = [t for i, t in enumerate(data) if i not in knn[:][1]]
     return c
 
+
 def find_best_cluster(record, clusters):
-    "residual assignment. Find best cluster for record."
+    """residual assignment. Find best cluster for record."""
     min_distance = 1000000000000
     min_index = 0
     best_cluster = clusters[0]
@@ -130,15 +161,21 @@ def find_best_cluster(record, clusters):
     # add record to best cluster
     return min_index
 
+
+def find_merge_cluster(record, clusters, umfuc):
+    """mergeing step. Find best cluster for record."""
+    return 0
+
+
 def CLUSTER(data, k):
-    "Group record according to QID distance. KNN"
+    """Group record according to QID distance. KNN"""
     global gl_att_tree
     global gl_treecover
     global gl_leaf_to_path
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     while len(data) >= k:
-        index = random.randrange(len(data))
+        index = randrange(0, len(data), 2)
         c =  find_best_KNN(data[index], k, data)
         clusters.append(c)
     # residual assignment
@@ -148,34 +185,121 @@ def CLUSTER(data, k):
         clusters[cluster_index].append(t)
     return clusters
 
+
 def Rum():
+    """Return relational information loss"""
     return
+
 
 def Tum():
+    """Return transaction information loss"""
     return
 
 
-def RMERGE_R():
-    return
+def RMERGE_R(clusters):
+    """Select the cluster c with minimum Rum(c) as a seed.
+    Find c' with most similar realtional values to c and 
+    constructs a temporary dataset Dtemp that reflects the 
+    mergeing of c and c'. If Dtemp does not violate the Rum
+    threshold, it is assinged to result.
+    """
+    Rum_list = []
+    for i, t in enumerate(clusters):
+        temp = [i, Rum(t)]
+        insert_to_sorted(Rum_list, temp)
+
+    while len(Rum_list) > 0:
+        c = Rum_list[-1][0]
+        index = find_merge_cluster(c.middle, clusters)
+        middle = middle(clusters[index].middle, clusters[c].middle)
+        members = []
+        members.extend(clusters[index].member)
+        members.extend(clusters[c].member)
+        if Rum(members, middle) <= gl_threshold:
+            clusters[index].merge(clusters[c], middle)
+            temp = [index, Rum(clusters[index])]
+            update_to_sorted(Rum_list, temp)
+            del Rum_list[-1]
+        else:
+            break
+    return clusters
+
 
 def RMERGE_T():
+    """Select the cluster c with minimum Rum(c) as a seed.
+    Find c' that contain similar transacation iterms to c and 
+    constructs a temporary dataset Dtemp by mergeing with c.
+    If Dtemp does not violate the Rum threshold, it is 
+    assinged to result.
+    """
+    Rum_list = []
+    for i, t in enumerate(clusters):
+        temp = [i, Rum(t)]
+        insert_to_sorted(Rum_list, temp)
+
+    while len(Rum_list) > 0:
+        c = Rum_list[-1][0]
+        index = find_merge_cluster(c.middle, clusters)
+        middle = middle(clusters[index].middle, clusters[c].middle)
+        members = []
+        members.extend(clusters[index].member)
+        members.extend(clusters[c].member)
+        if Rum(members, middle) <= gl_threshold:
+            clusters[index].merge(clusters[c], middle)
+            temp = [index, Rum(clusters[index])]
+            update_to_sorted(Rum_list, temp)
+            del Rum_list[-1]
+        else:
+            break
     return
 
+
 def RMERGE_RT():
+    """Select the cluster c with minimum Rum(c) as a seed.
+    Find the c' that is as close as possible to c, based on 
+    (u+v) (u and v are the indices of c' in Rum and Tum list)
+    """
+    Rum_list = []
+    Tum_list = []
+    sum_list = []
+
+    while len(Rum_list) > 0:
+        c = Rum_list[-1][0]
+        # find c' according sum(u+v)
+        index = find_merge_cluster(c.middle, clusters)
+
+        middle = middle(clusters[index].middle, clusters[c].middle)
+        members = []
+        members.extend(clusters[index].member)
+        members.extend(clusters[c].member)
+        if Rum(members, middle) <= gl_threshold:
+            clusters[index].merge(clusters[c], middle)
+            temp = [index, Rum(clusters[index])]
+            update_to_sorted(Rum_list, temp)
+            del Rum_list[-1]
+        else:
+            break
     return
 
 
 def TMERGE_R():
+    """
+    """
     return
 
+
 def TMERGE_T():
+    """
+    """
     return
+
 
 def TMERGE_RT():
     return
 
+
 def num_analysis(attlist):
-    "plot distribution of attlist"
+    """plot distribution of attlist"""
     import operator
     temp = {}
     for t in attlist:
@@ -192,7 +316,7 @@ def num_analysis(attlist):
     for k, v  in items:
         value.append(k)
         count.append(v)
-    pdb.set_trace()
+    # pdb.set_trace()
     xlabel('value')
     ylabel('count')
     plt.hist(count, bins=value, normed=1, histtype='step', rwidth=0.8)
@@ -200,9 +324,10 @@ def num_analysis(attlist):
     # grid on
     grid(True)
     show()
+
     
 def read_tree_file(treename):
-    "read tree data from treefile,store them in treenode and treelist"
+    """read tree data from treename"""
     global gl_treecover
     global gl_att_tree
     global gl_leaf_to_path
@@ -238,19 +363,20 @@ def read_tree_file(treename):
 
     treefile.close()
 
+
 def readtree():
+    """read tree from data/tree_*.txt, store them in gl_att_tree and gl_leaf_to_path"""
     global gl_att_name
     print "Reading Tree"
     for t in gl_attlist:
         gl_att_name.append(gl_useratt[t])
     gl_att_name.append(gl_conditionatt[2])
-    "read tree data from treefiles, store them in treenode and leaf_to_treepath"    
     for t in gl_att_name:
         read_tree_file(t)
-    
+
 
 def readdata():
-    "read microda for *.txt and store them in {}[]"
+    """read microda for *.txt and store them in gl_databack"""
     global gl_databack
     global gl_att_cover
     global gl_useratt
@@ -313,7 +439,7 @@ if __name__ == '__main__':
     #read record
     readdata()
     # pdb.set_trace()
-    CLUSTER()
+    CLUSTER(gl_databack[:],100)
     
     
     '''
