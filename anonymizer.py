@@ -186,14 +186,31 @@ def CLUSTER(data, k):
     return clusters
 
 
-def Rum():
-    """Return relational information loss"""
-    return
+def Rum(record, middle):
+    """Return relational information loss. 
+    Based on NCP (Normalized Certainty Penalty)
+    """
+   return NCP(record, middle)
 
 
-def Tum():
-    """Return transaction information loss"""
-    return
+def UL(record, middle):
+    """Compute UL (Utility Loss) for record and middle.
+    """
+    ul = 0.0
+    supp_sum = 0
+    for t in middle[-1]:
+        supp = gl_att_tree[-1].node(t).support
+        supp_sum += supp
+        ul += pow(2, supp)
+    ul /= pow(2, supp_sum)
+    return ul
+
+
+def Tum(record, middle):
+    """Return transaction information loss. 
+    Based on UL (Utility Loss)
+    """
+    return UL(record, middle)
 
 
 def RMERGE_R(clusters):
