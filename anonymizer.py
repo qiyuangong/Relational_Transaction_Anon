@@ -34,32 +34,59 @@ gl_att_cover = [[],[],[],[],[],[],[],[]]
 gl_LCA = []
 
 
-def distance(record, cluster):
-    """return distance between record and cluster"""
-    mid = middle(record, cluster.middle)
-    distance = NCP(record, mid) + len(cluster.member) * NCP(cluster.middle, mid)
+def r_distance(source, target):
+    """Return distance between source (cluster or record) 
+    and target (cluster or record). The distance is based on 
+    NCP (Normalized Certainty Penalty) on relational part.
+    If source or target are cluster, func need to multiply
+    source_len (or target_len).
+    """
+    source_mid = []
+    target_mid = []
+    source_len = 1
+    target_len = 1
+    # check if target is Cluster
+    if isinstance(target, Cluster):
+        target_mid = target.middle
+        target_len = len(target.member)
+    # check if souce is Cluster
+    if isinstance(source, Cluster):
+        source_mid = source.middle
+        source_len = len(source.member)
+    mid = middle(source_mid, target_mid)
+    distance = (source_len+target_len) * NCP(mid)
     return distance
 
-def distance(record1, record2):
-    """return distance between record and cluster"""
-    mid = middle(record1, record2)
-    distance = NCP(record1, mid) +  NCP(record2, mid)
-    return distance
 
-def NCP(record, middle):
-    """compute NCP (Normalized Certainty Penalty)"""
+def NCP(middle):
+    """Compute NCP (Normalized Certainty Penalty) 
+    when generate record to middle.
+    """
     ncp = 0.0
     # exclude SA values(last one type [])
-    for i in range(len(record) - 1):
+    for i in range(len(middle) - 1):
         # if support of numerator is 1, then NCP is 0
-        if gl_att_tree[i][record[i]].support == 1:
+        if gl_att_tree[i][middle[i]].support == 1:
             continue
-        ncp += gl_att_tree[i][record[i]].support * 1.0  / gl_att_tree[i][middle[i]].support
+        ncp +=  gl_att_tree[i][middle[i]].support * 1.0 / gl_treecover[i]
     return ncp
 
 
+def UL(middle):
+    """Compute UL (Utility Loss) for record and middle.
+    """
+    ul = 0.0
+    supp_sum = 0
+    for t in middle[-1]:
+        supp = gl_att_tree[-1].node(t).support
+        supp_sum += supp
+        ul += pow(2, supp)
+    ul /= pow(2, supp_sum)
+    return ul
+
+
 def get_LCA(index, item1, item2):
-    """get lowest commmon ancestor(including themselves)"""
+    """Get lowest commmon ancestor (including themselves)"""
     # get parent list from 
     if item1 == item2:
         return item1
@@ -77,11 +104,91 @@ def get_LCA(index, item1, item2):
     return last_LCA
 
 
+def tran_cmp(node1, node2):
+    """Compare node1 (str) and node2 (str)"""
+    support1 = gl_att_tree[-1][node1].support
+    support2 = gl_att_tree[-1][node2].support
+    if support1 != support2:
+        return support1 -support2
+    else:
+        return (node1 > node2)
+        
+
+def get_LCC(tran1, tran2):
+    """Get lowest common cut for tran1 and tran2.
+    Transaction generalization need to find out LCC.
+    """
+    treemark1 = {}
+    treemark2 = {}
+    trantemp = []
+    alltran = tran1[:]
+    alltran.extend(tran2)
+    # mark the generalization tree with red color
+    for t in tran1:
+        treemark1[t] = 1
+        ptemp = gl_att_tree[-1][t].parent
+        for pt in tran1:
+            if not pt.value in treemark1:
+                treemark1[pt.value] = 1
+            else:
+                treemark1[pt.value] += 1
+    
+    # check the other color
+
+    for t in tran2:
+        if treemark1.has_key(t):
+            if not t in trantemp:
+                trantemp.append(t)
+        treemark2[t] = 1
+        ptemp = gl_att_tree[-1][t].parent
+        for pt in ptemp:
+            if not pt.value in treemark2:
+                treemark2[pt.value] = 1
+            else:
+                treemark2[pt.value] = +1
+            if treemark1.has_key(pt.value):
+                if not pt.value in trantemp:
+                    trantemp.appent(pt.value)
+
+    if len(trantemp) <= 1:
+        renturn trantemp
+    trantemp.sort(cmp=tran_cmp, reverse=True)
+    dellist = []
+    for t in temptemp:
+        ptemp = gl_att_tree[-1][t].child
+        checklist = []
+        for pt in ptemp:
+            if pt.value in trantemp:
+                checklist.append(pt.value)
+        if t in dellist:
+            for pt in checkist:
+                dellist.append(pt)
+            continue
+        sum1 = 0
+        sum2 = 0
+        for pt in checklist:
+            sum1 += treemark1[pt]
+            sum2 += treemark2[pt]
+        if sum1 == treemark1[t] and sum2 ==treemark2[t]:
+            dellist.append(pt)
+        else:
+            for pt in checklist:
+                dellist.append(t)
+    for t in dellist:
+        try:
+            trantemp.remove(t)
+        except:
+            print "Error! When del value according to dellist"
+            pdb.set_trace()
+    return trantemp
+
+
 def middle(record1, record2):
-    """compute generalization result of record1 and record2"""
+    """Compute generalization result of record1 and record2"""
     middle = []
     for i in range(gl_att_QI):
         middle.append(get_LCA(i, record1[i], record2[i]))
+        middle.append(get_LCC(record[-1], record2[-1]))
     return middle
 
 
@@ -137,7 +244,7 @@ def find_best_KNN(record, k, data):
     element = []
     max_distance = 1000000000000
     for i, t in enumerate(data):
-        dis = distance(record, t)
+        dis = r_distance(record, t)
         if dis < max_distance:
             temp = [i, dis]
             max_distance = insert_to_sorted(knn, temp, k)
@@ -153,7 +260,7 @@ def find_best_cluster(record, clusters):
     min_index = 0
     best_cluster = clusters[0]
     for i, t in enumerate(clusters):
-        distance = distance(record, t.middle)
+        distance = r_distance(record, t.middle)
         if distance < min_distance:
             min_distance = distance
             min_index = i
@@ -162,9 +269,10 @@ def find_best_cluster(record, clusters):
     return min_index
 
 
-def find_merge_cluster(record, clusters, umfuc):
+def find_merge_cluster(record, clusters):
     """mergeing step. Find best cluster for record."""
     return 0
+
 
 
 def CLUSTER(data, k):
@@ -186,31 +294,18 @@ def CLUSTER(data, k):
     return clusters
 
 
-def Rum(record, middle):
+def Rum(middle):
     """Return relational information loss. 
     Based on NCP (Normalized Certainty Penalty)
     """
-   return NCP(record, middle)
+   return NCP(middle)
 
 
-def UL(record, middle):
-    """Compute UL (Utility Loss) for record and middle.
-    """
-    ul = 0.0
-    supp_sum = 0
-    for t in middle[-1]:
-        supp = gl_att_tree[-1].node(t).support
-        supp_sum += supp
-        ul += pow(2, supp)
-    ul /= pow(2, supp_sum)
-    return ul
-
-
-def Tum(record, middle):
+def Tum(middle):
     """Return transaction information loss. 
     Based on UL (Utility Loss)
     """
-    return UL(record, middle)
+    return UL(middle)
 
 
 def RMERGE_R(clusters):
@@ -222,19 +317,17 @@ def RMERGE_R(clusters):
     """
     Rum_list = []
     for i, t in enumerate(clusters):
-        temp = [i, Rum(t)]
+        temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
 
     while len(Rum_list) > 0:
         c = Rum_list[-1][0]
         index = find_merge_cluster(c.middle, clusters)
         middle = middle(clusters[index].middle, clusters[c].middle)
-        members = []
-        members.extend(clusters[index].member)
-        members.extend(clusters[c].member)
-        if Rum(members, middle) <= gl_threshold:
+        r = Rum(middle)
+        if r <= gl_threshold:
             clusters[index].merge(clusters[c], middle)
-            temp = [index, Rum(clusters[index])]
+            temp = [index, r]
             update_to_sorted(Rum_list, temp)
             del Rum_list[-1]
         else:
@@ -251,19 +344,17 @@ def RMERGE_T():
     """
     Rum_list = []
     for i, t in enumerate(clusters):
-        temp = [i, Rum(t)]
+        temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
 
     while len(Rum_list) > 0:
         c = Rum_list[-1][0]
         index = find_merge_cluster(c.middle, clusters)
         middle = middle(clusters[index].middle, clusters[c].middle)
-        members = []
-        members.extend(clusters[index].member)
-        members.extend(clusters[c].member)
-        if Rum(members, middle) <= gl_threshold:
+        r = Rum(middle)
+        if r <= gl_threshold:
             clusters[index].merge(clusters[c], middle)
-            temp = [index, Rum(clusters[index])]
+            temp = [index, r]
             update_to_sorted(Rum_list, temp)
             del Rum_list[-1]
         else:
