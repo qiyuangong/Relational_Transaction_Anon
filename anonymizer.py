@@ -41,8 +41,8 @@ def r_distance(source, target):
     If source or target are cluster, func need to multiply
     source_len (or target_len).
     """
-    source_mid = []
-    target_mid = []
+    source_mid = source
+    target_mid = target
     source_len = 1
     target_len = 1
     # check if target is Cluster
@@ -58,26 +58,26 @@ def r_distance(source, target):
     return distance
 
 
-def NCP(middle):
+def NCP(mid):
     """Compute NCP (Normalized Certainty Penalty) 
     when generate record to middle.
     """
     ncp = 0.0
     # exclude SA values(last one type [])
-    for i in range(len(middle) - 1):
+    for i in range(len(mid) - 1):
         # if support of numerator is 1, then NCP is 0
-        if gl_att_tree[i][middle[i]].support == 1:
+        if gl_att_tree[i][mid[i]].support == 1:
             continue
-        ncp +=  gl_att_tree[i][middle[i]].support * 1.0 / gl_treecover[i]
+        ncp +=  gl_att_tree[i][mid[i]].support * 1.0 / gl_treecover[i]
     return ncp
 
 
-def UL(middle):
+def UL(mid):
     """Compute UL (Utility Loss) for record and middle.
     """
     ul = 0.0
     supp_sum = 0
-    for t in middle[-1]:
+    for t in mid[-1]:
         supp = gl_att_tree[-1].node(t).support
         supp_sum += supp
         ul += pow(2, supp)
@@ -90,10 +90,13 @@ def get_LCA(index, item1, item2):
     # get parent list from 
     if item1 == item2:
         return item1
-    parent1 = gl_att_tree[index][item1].parent[:]
-    parent2 = gl_att_tree[index][item2].parent[:]
-    parent1.insert(0, item1)
-    parent2.insert(0, item2)
+    try:
+        parent1 = gl_att_tree[index][item1].parent[:]
+        parent2 = gl_att_tree[index][item2].parent[:]
+    except:
+        pdb.set_trace()
+    parent1.insert(0, gl_att_tree[index][item1])
+    parent2.insert(0, gl_att_tree[index][item2])
     minlen = min(len(parent1), len(parent2))
     last_LCA = parent1[-1]
     for i in range(minlen):
@@ -101,7 +104,7 @@ def get_LCA(index, item1, item2):
             last_LCA = parent1[-i]
         else:
             break 
-    return last_LCA
+    return last_LCA.value
 
 
 def tran_cmp(node1, node2):
@@ -127,7 +130,7 @@ def get_LCC(tran1, tran2):
     for t in tran1:
         treemark1[t] = 1
         ptemp = gl_att_tree[-1][t].parent
-        for pt in tran1:
+        for pt in ptemp:
             if not pt.value in treemark1:
                 treemark1[pt.value] = 1
             else:
@@ -148,20 +151,20 @@ def get_LCC(tran1, tran2):
                 treemark2[pt.value] = +1
             if treemark1.has_key(pt.value):
                 if not pt.value in trantemp:
-                    trantemp.appent(pt.value)
+                    trantemp.append(pt.value)
 
     if len(trantemp) <= 1:
-        renturn trantemp
+        return trantemp
     trantemp.sort(cmp=tran_cmp, reverse=True)
     dellist = []
-    for t in temptemp:
+    for t in trantemp:
         ptemp = gl_att_tree[-1][t].child
         checklist = []
         for pt in ptemp:
             if pt.value in trantemp:
                 checklist.append(pt.value)
         if t in dellist:
-            for pt in checkist:
+            for pt in checklist:
                 dellist.append(pt)
             continue
         sum1 = 0
@@ -170,10 +173,10 @@ def get_LCC(tran1, tran2):
             sum1 += treemark1[pt]
             sum2 += treemark2[pt]
         if sum1 == treemark1[t] and sum2 ==treemark2[t]:
-            dellist.append(pt)
+            dellist.append(t)
         else:
             for pt in checklist:
-                dellist.append(t)
+                dellist.append(pt)
     for t in dellist:
         try:
             trantemp.remove(t)
@@ -186,9 +189,9 @@ def get_LCC(tran1, tran2):
 def middle(record1, record2):
     """Compute generalization result of record1 and record2"""
     middle = []
-    for i in range(gl_att_QI):
+    for i in range(gl_att_QI - 1):
         middle.append(get_LCA(i, record1[i], record2[i]))
-        middle.append(get_LCC(record[-1], record2[-1]))
+    middle.append(get_LCC(record1[-1], record2[-1]))
     return middle
 
 
@@ -201,7 +204,7 @@ def middle_for_cluster(records):
         return middle(records[0], records[1])
     else:
         mid = len_r / 2
-        return middle(records[:mid], records[mid:])
+        return middle(middle_for_cluster(records[:mid]), middle_for_cluster(records[mid:]))
 
 
 def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
@@ -239,7 +242,7 @@ def update_to_sorted(sorted_tuple, temp, k=10000000000000):
 
 def find_best_KNN(record, k, data):
     """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
-    # elements = heapq.nsmallest(k,)
+    elements = []
     knn = []
     element = []
     max_distance = 1000000000000
@@ -248,9 +251,11 @@ def find_best_KNN(record, k, data):
         if dis < max_distance:
             temp = [i, dis]
             max_distance = insert_to_sorted(knn, temp, k)
-    c = Cluster(elements)
+    for t in knn:
+        elements.append(data[t[0]])
+    c = Cluster(elements, middle_for_cluster(elements))
     # delete multiple elements from data according to knn index list
-    data[:] = [t for i, t in enumerate(data) if i not in knn[:][1]]
+    data[:] = [t for i, t in enumerate(data) if i not in knn[:][0]]
     return c
 
 
@@ -282,6 +287,7 @@ def CLUSTER(data, k):
     global gl_leaf_to_path
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
+    print "Begin to Cluster based on NCP"
     while len(data) >= k:
         index = randrange(0, len(data), 2)
         c =  find_best_KNN(data[index], k, data)
@@ -290,22 +296,22 @@ def CLUSTER(data, k):
     while len(data) > 0:
         t = data.pop()
         cluster_index = find_best_cluster(t, clusters)
-        clusters[cluster_index].append(t)
+        clusters[cluster_index].member.append(t)
     return clusters
 
 
-def Rum(middle):
+def Rum(mid):
     """Return relational information loss. 
     Based on NCP (Normalized Certainty Penalty)
     """
-   return NCP(middle)
+    return NCP(mid)
 
 
-def Tum(middle):
+def Tum(mid):
     """Return transaction information loss. 
     Based on UL (Utility Loss)
     """
-    return UL(middle)
+    return UL(mid)
 
 
 def RMERGE_R(clusters):
@@ -315,6 +321,7 @@ def RMERGE_R(clusters):
     mergeing of c and c'. If Dtemp does not violate the Rum
     threshold, it is assinged to result.
     """
+    print "Begin RMERGE_R"
     Rum_list = []
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
@@ -322,14 +329,14 @@ def RMERGE_R(clusters):
 
     while len(Rum_list) > 0:
         c = Rum_list[-1][0]
-        index = find_merge_cluster(c.middle, clusters)
-        middle = middle(clusters[index].middle, clusters[c].middle)
-        r = Rum(middle)
+        index = find_merge_cluster(clusters[c].middle, clusters)
+        mid = middle(clusters[index].middle, clusters[c].middle)
+        r = Rum(mid)
         if r <= gl_threshold:
-            clusters[index].merge(clusters[c], middle)
+            clusters[index].merge_group(clusters[c], mid)
+            del Rum_list[-1]
             temp = [index, r]
             update_to_sorted(Rum_list, temp)
-            del Rum_list[-1]
         else:
             break
     return clusters
@@ -342,6 +349,7 @@ def RMERGE_T():
     If Dtemp does not violate the Rum threshold, it is 
     assinged to result.
     """
+    print "Begin RMERGE_T"
     Rum_list = []
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
@@ -367,6 +375,7 @@ def RMERGE_RT():
     Find the c' that is as close as possible to c, based on 
     (u+v) (u and v are the indices of c' in Rum and Tum list)
     """
+    print "Begin RMERGE_RT"
     Rum_list = []
     Tum_list = []
     sum_list = []
@@ -547,8 +556,9 @@ if __name__ == '__main__':
     #read record
     readdata()
     # pdb.set_trace()
-    CLUSTER(gl_databack[:],100)
-    
+    clusters = CLUSTER(gl_databack[:10],5)
+    RMERGE_R(clusters)
+    print "Finish RT-Anonymization!!"
     
     '''
     hostname = socket.gethostname()
