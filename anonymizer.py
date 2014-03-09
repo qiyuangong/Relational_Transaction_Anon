@@ -286,10 +286,20 @@ def find_best_cluster(record, clusters):
     return min_index
 
 
-def find_merge_cluster(record, clusters):
+def find_merge_cluster(record, clusters, func):
     """mergeing step. Find best cluster for record."""
-    
-    return 0
+    min_distance = 1000000000000
+    min_index = 0
+    best_cluster = clusters[0]
+    for i, t in enumerate(clusters):
+        mid = middle(record, t.middle)
+        distance = func(mid)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            best_cluster = t
+    # add record to best cluster
+    return min_index    
 
 
 
@@ -341,9 +351,10 @@ def RMERGE_R(clusters):
         insert_to_sorted(Rum_list, temp)
     while len(Rum_list) > 1:
         c = Rum_list[0][0]
-        index = find_merge_cluster(clusters[c].middle, clusters)
+        index = find_merge_cluster(clusters[c].middle, clusters, Rum)
         mid = middle(clusters[index].middle, clusters[c].middle)
         r = Rum(mid)
+        pdb.set_trace()
         if r <= gl_threshold and c != index:
             clusters[index].merge_group(clusters[c], mid)
             # pdb.set_trace()
