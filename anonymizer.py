@@ -214,6 +214,8 @@ def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
     for i in range(len(sorted_tuple)):
         if sorted_tuple[i][1] > temp[1]:
             break
+    else:
+        i += 1
     sorted_tuple.insert(i, temp)
     # if sorted_tuple > k, del last element
     if len(sorted_tuple) > k:
@@ -225,17 +227,27 @@ def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
 def update_to_sorted(sorted_tuple, temp, k=10000000000000):
     """update element(index,distance) pair to sorted_tuple(list)"""
     # remove old pair
+    i = 0
     for i in range(len(sorted_tuple)):
         if sorted_tuple[i][0] == temp[0]:
             break
-    del sorted_tuple[i]
+    else:
+        i += 1
+    if i < len(sorted_tuple):
+        del sorted_tuple[i]
+    else:
+        print "Can not find the pair"
+        return
     # insert new pair
+    i = 0
     for i in range(len(sorted_tuple)):
         if sorted_tuple[i][1] > temp[1]:
-            sorted_tuple.insert(i, temp)
             break
+    else:
+        i += 1
+    sorted_tuple.insert(i, temp)
     # if sorted_tuple > k, del last element
-    if sorted_tuple > k:
+    if len(sorted_tuple) > k:
         del sorted_tuple[-1]
     # return largest
     return sorted_tuple[-1][1]
@@ -276,6 +288,7 @@ def find_best_cluster(record, clusters):
 
 def find_merge_cluster(record, clusters):
     """mergeing step. Find best cluster for record."""
+    
     return 0
 
 
@@ -326,16 +339,18 @@ def RMERGE_R(clusters):
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
-
-    while len(Rum_list) > 0:
-        c = Rum_list[-1][0]
+    while len(Rum_list) > 1:
+        c = Rum_list[0][0]
         index = find_merge_cluster(clusters[c].middle, clusters)
         mid = middle(clusters[index].middle, clusters[c].middle)
         r = Rum(mid)
-        if r <= gl_threshold:
+        if r <= gl_threshold and c != index:
             clusters[index].merge_group(clusters[c], mid)
-            del Rum_list[-1]
+            # pdb.set_trace()
+            del Rum_list[0]
             temp = [index, r]
+            if len(Rum_list) == 0:
+                pdb.set_trace()
             update_to_sorted(Rum_list, temp)
         else:
             break
@@ -353,14 +368,14 @@ def RMERGE_T():
     Rum_list = []
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
-        insert_to_sorted(Rum_list, temp)
+        insert_to_sorted(Rum_list, teamp)
 
     while len(Rum_list) > 0:
         c = Rum_list[-1][0]
         index = find_merge_cluster(c.middle, clusters)
         middle = middle(clusters[index].middle, clusters[c].middle)
         r = Rum(middle)
-        if r <= gl_threshold:
+        if r <= gl_threshold and c != index:
             clusters[index].merge(clusters[c], middle)
             temp = [index, r]
             update_to_sorted(Rum_list, temp)
