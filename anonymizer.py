@@ -5,7 +5,6 @@ from generalization import GenTree, Cluster
 from datetime import datetime
 from random import randrange
 import pdb
-import math
 import sys
 from ftp_upload import ftpupload
 import socket
@@ -75,13 +74,13 @@ def NCP(mid):
 def UL(mid):
     """Compute UL (Utility Loss) for record and middle.
     """
-    ul = 0.0
+    ul = 0
     supp_sum = 0
     for t in mid[-1]:
-        supp = gl_att_tree[-1].node(t).support
+        supp = gl_att_tree[-1][t].support
         supp_sum += supp
         ul += pow(2, supp)
-    ul /= pow(2, supp_sum)
+    ul = ul / pow(2, supp_sum) * 1.0
     return ul
 
 
@@ -90,11 +89,8 @@ def get_LCA(index, item1, item2):
     # get parent list from 
     if item1 == item2:
         return item1
-    try:
-        parent1 = gl_att_tree[index][item1].parent[:]
-        parent2 = gl_att_tree[index][item2].parent[:]
-    except:
-        pdb.set_trace()
+    parent1 = gl_att_tree[index][item1].parent[:]
+    parent2 = gl_att_tree[index][item2].parent[:]
     parent1.insert(0, gl_att_tree[index][item1])
     parent2.insert(0, gl_att_tree[index][item2])
     minlen = min(len(parent1), len(parent2))
@@ -117,94 +113,34 @@ def tran_cmp(node1, node2):
         return (node1 > node2)
         
 
-def get_LCC(tran1, tran2):
+def get_KM(trans, k, m=2):
     """Get lowest common cut for tran1 and tran2.
     Transaction generalization need to find out LCC.
     """
-    treemark1 = {}
-    treemark2 = {}
-    trantemp = []
-    alltran = tran1[:]
-    alltran.extend(tran2)
-    # mark the generalization tree with red color
-    for t in tran1:
-        treemark1[t] = 1
-        ptemp = gl_att_tree[-1][t].parent
-        for pt in ptemp:
-            if not pt.value in treemark1:
-                treemark1[pt.value] = 1
-            else:
-                treemark1[pt.value] += 1
     
-    # check the other color
-
-    for t in tran2:
-        if treemark1.has_key(t):
-            if not t in trantemp:
-                trantemp.append(t)
-        treemark2[t] = 1
-        ptemp = gl_att_tree[-1][t].parent
-        for pt in ptemp:
-            if not pt.value in treemark2:
-                treemark2[pt.value] = 1
-            else:
-                treemark2[pt.value] = +1
-            if treemark1.has_key(pt.value):
-                if not pt.value in trantemp:
-                    trantemp.append(pt.value)
-
-    if len(trantemp) <= 1:
-        return trantemp
-    trantemp.sort(cmp=tran_cmp, reverse=True)
-    dellist = []
-    for t in trantemp:
-        ptemp = gl_att_tree[-1][t].child
-        checklist = []
-        for pt in ptemp:
-            if pt.value in trantemp:
-                checklist.append(pt.value)
-        if t in dellist:
-            for pt in checklist:
-                dellist.append(pt)
-            continue
-        sum1 = 0
-        sum2 = 0
-        for pt in checklist:
-            sum1 += treemark1[pt]
-            sum2 += treemark2[pt]
-        if sum1 == treemark1[t] and sum2 ==treemark2[t]:
-            dellist.append(t)
-        else:
-            for pt in checklist:
-                dellist.append(pt)
-    for t in dellist:
-        try:
-            trantemp.remove(t)
-        except:
-            print "Error! When del value according to dellist"
-            pdb.set_trace()
     return trantemp
 
 
 def middle(record1, record2):
-    """Compute generalization result of record1 and record2"""
+    """Compute relational generalization result of record1 and record2"""
     middle = []
     for i in range(gl_att_QI - 1):
         middle.append(get_LCA(i, record1[i], record2[i]))
-    middle.append(get_LCC(record1[-1], record2[-1]))
     return middle
 
 
 def middle_for_cluster(records):
-    """calculat middle of records(list) recursively"""
+    """calculat middle of records(list) recursively.
+    Compute both relational middle for records (list).
+    """
     len_r = len(records)
     if len_r == 1:
         return records[0]
     elif len_r == 2:
-        return middle(records[0], records[1])
+        return  middle(records[0], records[1])
     else:
-        mid = len_r / 2
-        return middle(middle_for_cluster(records[:mid]), middle_for_cluster(records[mid:]))
+        midpoint = len_r / 2
+        return  middle(middle_for_cluster(records[:midpoint]), middle_for_cluster(records[midpoint:]))
 
 
 def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
@@ -286,21 +222,41 @@ def find_best_cluster(record, clusters):
     return min_index
 
 
-def find_merge_cluster(record, clusters, func):
+def find_merge_cluster(index, clusters, func):
     """mergeing step. Find best cluster for record."""
     min_distance = 1000000000000
+    record = clusters[index]
     min_index = 0
-    best_cluster = clusters[0]
+    min_mid = []
     for i, t in enumerate(clusters):
         mid = middle(record, t.middle)
         distance = func(mid)
         if distance < min_distance:
             min_distance = distance
             min_index = i
-            best_cluster = t
+            min_mid = mid[:]
     # add record to best cluster
-    return min_index    
+    return (min_index, min_distance, min_mid)
 
+def find_merge_cluster_T(index, clusters, Tum):
+    """mergeing step. Find best cluster for record."""
+    min_distance = 1000000000000
+    record = clusters[index]
+    min_index = 0
+    min_mid = []
+    for i, t in enumerate(clusters):
+        records = []
+        records.extend(t.member)
+        records.append(record)
+        mid = middle(record, t.middle)
+        mid.append(get_KM(records[-1], k))
+        distance = Tum(mid)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            min_mid = mid[:]
+    # add record to best cluster
+    return (min_index, min_distance, min_mid)
 
 
 def CLUSTER(data, k):
@@ -351,24 +307,21 @@ def RMERGE_R(clusters):
         insert_to_sorted(Rum_list, temp)
     while len(Rum_list) > 1:
         c = Rum_list[0][0]
-        index = find_merge_cluster(clusters[c].middle, clusters, Rum)
-        mid = middle(clusters[index].middle, clusters[c].middle)
-        r = Rum(mid)
-        pdb.set_trace()
+        t_tuple = find_merge_cluster(c, clusters, Rum)
+        index = t_tuple[0]
+        r = t_tuple[1]
+        mid = t_tuple[2]
         if r <= gl_threshold and c != index:
             clusters[index].merge_group(clusters[c], mid)
-            # pdb.set_trace()
             del Rum_list[0]
             temp = [index, r]
-            if len(Rum_list) == 0:
-                pdb.set_trace()
             update_to_sorted(Rum_list, temp)
         else:
             break
     return clusters
 
 
-def RMERGE_T():
+def RMERGE_T(clusters, k, m=2):
     """Select the cluster c with minimum Rum(c) as a seed.
     Find c' that contain similar transacation iterms to c and 
     constructs a temporary dataset Dtemp by mergeing with c.
@@ -379,21 +332,21 @@ def RMERGE_T():
     Rum_list = []
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
-        insert_to_sorted(Rum_list, teamp)
-
-    while len(Rum_list) > 0:
-        c = Rum_list[-1][0]
-        index = find_merge_cluster(c.middle, clusters)
-        middle = middle(clusters[index].middle, clusters[c].middle)
-        r = Rum(middle)
+        insert_to_sorted(Rum_list, temp)
+    while len(Rum_list) > 1:
+        c = Rum_list[0][0]
+        t_tuple = find_merge_cluster(c, clusters, Tum)
+        index = t_tuple[0]
+        r = t_tuple[1]
+        mid = t_tuple[2]
         if r <= gl_threshold and c != index:
-            clusters[index].merge(clusters[c], middle)
+            clusters[index].merge_group(clusters[c], mid)
+            del Rum_list[0]
             temp = [index, r]
-            update_to_sorted(Rum_list, temp)
-            del Rum_list[-1]
+            update_to_sorted(Rum_list, temp)  
         else:
             break
-    return
+    return clusters
 
 
 def RMERGE_RT():
@@ -582,8 +535,9 @@ if __name__ == '__main__':
     #read record
     readdata()
     # pdb.set_trace()
-    clusters = CLUSTER(gl_databack[:10],5)
-    RMERGE_R(clusters)
+    clusters = CLUSTER(gl_databack[:150],5)
+    # RMERGE_R(clusters)
+    RMERGE_T(clusters, 5, 5)
     print "Finish RT-Anonymization!!"
     
     '''
