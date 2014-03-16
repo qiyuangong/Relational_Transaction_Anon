@@ -108,10 +108,41 @@ def tran_cmp(node1, node2):
     support1 = gl_att_tree[-1][node1].support
     support2 = gl_att_tree[-1][node2].support
     if support1 != support2:
-        return support1 -support2
+        return support1 - support2
     else:
         return (node1 > node2)
-        
+
+
+def get_MaxBTD(trans):
+    """Get BTD from cluster.
+    Poulis define BTD of a cluster as the max BTD of all possbile
+    combination of (r1,r2) in cluster.
+    """
+    if len(trans) == 2:
+        return get_BTD(trans[0] + 1, trans[1])
+    result_BTD = []
+    len_tran = len(trans)
+    for i in range(len_tran):
+        for j in range(i + 1, len_tran):
+            result_BTD.add(get_BTD(trans[i], trans[j]))
+    return max(result_BTD)
+
+def get_BTD(tran1, tran2):
+    """Poulis suggested to use BTD (Bit-vector Transaction Distance)
+    to compute distance between transactions rather than Tum. As Tum
+    cause huge runing time.
+    """
+    satree = gl_att_tree[-1].member
+    andcount = 1
+    xorcount = 1
+    for t in satree:
+        if t in tran1 and t in tran2:
+            andcount += 1
+        else if t not in tran1 and t not in tran2:
+            pass
+        else:
+            xorcount += 1
+    return (xorcount * 1.0 / andcount)
 
 def get_KM(trans, k, m=2):
     """Get lowest common cut for tran1 and tran2.
