@@ -118,13 +118,16 @@ def get_MaxBTD(trans):
     Poulis define BTD of a cluster as the max BTD of all possbile
     combination of (r1,r2) in cluster.
     """
-    if len(trans) == 2:
-        return get_BTD(trans[0] + 1, trans[1])
-    result_BTD = []
     len_tran = len(trans)
+    if len_tran < 2:
+        print "Error: len(trans) < 2"
+        return 0
+    elif len_tran == 2:
+        return get_BTD(trans[0], trans[1])
+    result_BTD = []
     for i in range(len_tran):
         for j in range(i + 1, len_tran):
-            result_BTD.add(get_BTD(trans[i], trans[j]))
+            result_BTD.append(get_BTD(trans[i], trans[j]))
     return max(result_BTD)
 
 def get_BTD(tran1, tran2):
@@ -132,13 +135,13 @@ def get_BTD(tran1, tran2):
     to compute distance between transactions rather than Tum. As Tum
     cause huge runing time.
     """
-    satree = gl_att_tree[-1].member
+    satree = gl_att_cover[-1]
     andcount = 1
     xorcount = 1
     for t in satree:
         if t in tran1 and t in tran2:
             andcount += 1
-        else if t not in tran1 and t not in tran2:
+        elif t not in tran1 and t not in tran2:
             pass
         else:
             xorcount += 1
@@ -165,7 +168,10 @@ def middle_for_cluster(records):
     Compute both relational middle for records (list).
     """
     len_r = len(records)
-    if len_r == 1:
+    if len_r <= 0:
+        print "Error: empty list!"
+        return []
+    elif len_r == 1:
         return records[0]
     elif len_r == 2:
         return  middle(records[0], records[1])
@@ -256,37 +262,36 @@ def find_best_cluster(record, clusters):
 def find_merge_cluster(index, clusters, func):
     """mergeing step. Find best cluster for record."""
     min_distance = 1000000000000
-    record = clusters[index]
+    source = clusters[index]
     min_index = 0
     min_mid = []
     for i, t in enumerate(clusters):
-        mid = middle(record, t.middle)
+        mid = middle(source.middle, t.middle)
         distance = func(mid)
         if distance < min_distance:
             min_distance = distance
             min_index = i
             min_mid = mid[:]
-    # add record to best cluster
     return (min_index, min_distance, min_mid)
 
-def find_merge_cluster_T(index, clusters, Tum):
+
+def find_merge_cluster_T(index, clusters):
     """mergeing step. Find best cluster for record."""
     min_distance = 1000000000000
-    record = clusters[index]
+    source = clusters[index]
     min_index = 0
     min_mid = []
     for i, t in enumerate(clusters):
         records = []
         records.extend(t.member)
-        records.append(record)
-        mid = middle(record, t.middle)
-        mid.append(get_KM(records[-1], k))
-        distance = Tum(mid)
+        records.extend(source.member)
+        distance = get_MaxBTD(records[:][-1])
         if distance < min_distance:
             min_distance = distance
             min_index = i
-            min_mid = mid[:]
-    # add record to best cluster
+            min_mid = middle_for_cluster(records)
+    # compute Rum distacne for best cluster
+    min_distance = Rum(min_mid)
     return (min_index, min_distance, min_mid)
 
 
@@ -352,7 +357,7 @@ def RMERGE_R(clusters):
     return clusters
 
 
-def RMERGE_T(clusters, k, m=2):
+def RMERGE_T(clusters):
     """Select the cluster c with minimum Rum(c) as a seed.
     Find c' that contain similar transacation iterms to c and 
     constructs a temporary dataset Dtemp by mergeing with c.
@@ -366,7 +371,7 @@ def RMERGE_T(clusters, k, m=2):
         insert_to_sorted(Rum_list, temp)
     while len(Rum_list) > 1:
         c = Rum_list[0][0]
-        t_tuple = find_merge_cluster(c, clusters, Tum)
+        t_tuple = find_merge_cluster_T(c, clusters)
         index = t_tuple[0]
         r = t_tuple[1]
         mid = t_tuple[2]
@@ -568,7 +573,7 @@ if __name__ == '__main__':
     # pdb.set_trace()
     clusters = CLUSTER(gl_databack[:150],5)
     # RMERGE_R(clusters)
-    RMERGE_T(clusters, 5, 5)
+    RMERGE_T(clusters)
     print "Finish RT-Anonymization!!"
     
     '''
