@@ -571,9 +571,20 @@ if __name__ == '__main__':
     #read record
     readdata()
     # pdb.set_trace()
-    clusters = CLUSTER(gl_databack[:150],5)
-    # RMERGE_R(clusters)
-    RMERGE_T(clusters)
+    clusters = CLUSTER(gl_databack[:200],10)
+    clusters = RMERGE_R(clusters)
+    for i, t in enumerate(clusters):
+        print "cluster %d" % i 
+        print t.middle
+    print "Finish RT-Anon based on RMERGE_R\n"
+    
+    clusters = CLUSTER(gl_databack[:200],10)
+    clusters = RMERGE_T(clusters)
+    for i, t in enumerate(clusters):
+        print "cluster %d" % i 
+        print t.middle        
+    print "Finish RT-Anon based on RMERGE_T\n"
+    
     print "Finish RT-Anonymization!!"
     
     '''
