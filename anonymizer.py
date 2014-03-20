@@ -32,6 +32,8 @@ gl_att_cover = [[],[],[],[],[],[],[],[]]
 # reduce 
 gl_LCA = []
 
+# Poulis set k=25, m=2 as default!
+
 
 def r_distance(source, target):
     """Return distance between source (cluster or record) 
@@ -147,10 +149,11 @@ def get_BTD(tran1, tran2):
             xorcount += 1
     return (xorcount * 1.0 / andcount)
 
-def get_KM(trans, k, m=2):
+def get_KM(trans, k=25, m=2):
     """Get lowest common cut for tran1 and tran2.
     Transaction generalization need to find out LCC.
     """
+    trantemp = []
     
     return trantemp
 
@@ -180,7 +183,7 @@ def middle_for_cluster(records):
         return  middle(middle_for_cluster(records[:midpoint]), middle_for_cluster(records[midpoint:]))
 
 
-def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
+def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
     """insert element(index,distance) pair to sorted_tuple(list)"""
     # insert sort
     i = 0
@@ -190,14 +193,14 @@ def insert_to_sorted(sorted_tuple, temp, k=10000000000000):
     else:
         i += 1
     sorted_tuple.insert(i, temp)
-    # if sorted_tuple > k, del last element
-    if len(sorted_tuple) > k:
+    # if sorted_tuple > tail, del last element
+    if len(sorted_tuple) > tail:
         del sorted_tuple[-1]
     # return largest
     return sorted_tuple[-1][1]
 
 
-def update_to_sorted(sorted_tuple, temp, k=10000000000000):
+def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
     """update element(index,distance) pair to sorted_tuple(list)"""
     # remove old pair
     i = 0
@@ -219,8 +222,8 @@ def update_to_sorted(sorted_tuple, temp, k=10000000000000):
     else:
         i += 1
     sorted_tuple.insert(i, temp)
-    # if sorted_tuple > k, del last element
-    if len(sorted_tuple) > k:
+    # if sorted_tuple > tail, del last element
+    if len(sorted_tuple) > tail:
         del sorted_tuple[-1]
     # return largest
     return sorted_tuple[-1][1]
@@ -295,7 +298,7 @@ def find_merge_cluster_T(index, clusters):
     return (min_index, min_distance, min_mid)
 
 
-def CLUSTER(data, k):
+def CLUSTER(data, k=25):
     """Group record according to QID distance. KNN"""
     global gl_att_tree
     global gl_treecover
@@ -565,20 +568,120 @@ def readdata():
     conditionfile.close()
 
 
+def count_query(data, att_select, value_select):
+    "input query att_select and value_select,return count()"
+    count = 0
+    lenquery = len(att_select)
+    for temp in data:
+        for i in range(lenquery):
+            index = att_select[i]
+            # value(list) and temp[index](value)
+            value = value_select[i]
+            if index != 7:
+                if not temp[index] in value:
+                    break
+            else:
+                # gen value
+                flag = False
+                for t in value:
+                    if t in temp[index]:
+                        flag = True
+                if not flag:
+                    break
+        else:
+            count += 1
+    return count
+
+
+def cluster_to_list(clusters):
+    datalist = []
+    for t in clusters:
+        # relational generalization
+        for i in range(len(t.member)):
+            datalist.add(t.middle)
+        
+        # transactional generalization
+
+    return datalist
+
+
+
+
+
+def average_relative_error(data, result, qd=2, s=5):
+    "return average relative error of anonmized microdata,qd denote the query dimensionality, b denot seleciton of query"
+    global att_cover
+    are = 0.0
+    lenresult = len(result)
+    transform_result = []
+    blist = []
+    seed = math.pow(s*1.0/100, 1.0/(qd +1))
+    for i in range(8):
+        blist.append(math.ceil(len(att_cover[i]) * seed))
+    for i in range(lenresult):
+        temp = anatomy_transform(result[i])
+
+
+
+        # pdb.set_trace()
+        transform_result.extend(temp)
+
+    num = 100
+    zeroare = 0
+    # pdb.set_trace()
+    for turn in range(num):
+        att_select = []
+        value_select = []
+        i = 0 
+        while i < qd:
+            t = random.randint(0,6)
+            if t not in att_select:
+                att_select.append(t)
+            else:
+                i -= 1
+            i += 1
+        att_select.append(7)
+        lenquery = len(att_select)
+        
+        # pdb.set_trace()
+        for i in range(lenquery):
+            index = att_select[i]
+            temp = []
+            count = 0
+            while count < blist[index]:
+                t = random.choice(att_cover[index])
+                if t not in temp:
+                    temp.append(t)
+                else:
+                    count -= 1
+                count += 1
+            value_select.append(temp)
+        acout = count_query(data, att_select, value_select)
+        rcout = count_query(transform_result, att_select, value_select)
+        if acout != 0:
+            are += abs(acout - rcout) * 1.0 / acout
+        else:
+            zeroare += 0 
+    print "Times=%d when Query on microdata is Zero" % zeroare
+    if num == zeroare:
+        return 0            
+    return are / (num - zeroare)
+
+
 if __name__ == '__main__':
     #read gentree tax
     readtree()
     #read record
     readdata()
     # pdb.set_trace()
-    clusters = CLUSTER(gl_databack[:200],10)
+    clusters = CLUSTER(gl_databack[:200],25)
     clusters = RMERGE_R(clusters)
     for i, t in enumerate(clusters):
         print "cluster %d" % i 
         print t.middle
     print "Finish RT-Anon based on RMERGE_R\n"
     
-    clusters = CLUSTER(gl_databack[:200],10)
+    clusters = CLUSTER(gl_databack[:200],25)
     clusters = RMERGE_T(clusters)
     for i, t in enumerate(clusters):
         print "cluster %d" % i 
