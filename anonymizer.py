@@ -153,9 +153,27 @@ def get_KM(trans, k=25, m=2):
     """Get lowest common cut for tran1 and tran2.
     Transaction generalization need to find out LCC.
     """
-    trantemp = []
-    
-    return trantemp
+    return AA(trans, k, m)
+
+
+def create_count_tree(trans, m):
+    """creat a count_tree
+    """
+    return
+
+
+def AA(trans, k=25, m=2):
+    """Apriori-based anonymization for transaction anonymization. 
+    Developed by Manolis Terrovitis
+    """
+    return
+
+
+def DA(trans, k=25, m=2):
+    """Direct anonymization for transaction anonymization.
+    Developed by Manolis Terrovitis
+    """
+    return
 
 
 def middle(record1, record2):
@@ -687,7 +705,6 @@ if __name__ == '__main__':
         print "cluster %d" % i 
         print t.middle        
     print "Finish RT-Anon based on RMERGE_T\n"
-    
     print "Finish RT-Anonymization!!"
     
     '''
