@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 #coding=utf-8
 
-from generalization import GenTree, Cluster
+from generalization import GenTree, Cluster, CountTree
 from datetime import datetime
 from random import randrange
 import pdb
 import sys
 from ftp_upload import ftpupload
 import socket
+from itertools import permutations, combinations
 # from pylab import *
 
 
@@ -31,9 +32,10 @@ gl_treecover = []
 gl_att_cover = [[],[],[],[],[],[],[],[]]
 # reduce 
 gl_LCA = []
+# count tree root
+gl_count_tree = []
 
 # Poulis set k=25, m=2 as default!
-
 
 def r_distance(source, target):
     """Return distance between source (cluster or record) 
@@ -115,6 +117,21 @@ def tran_cmp(node1, node2):
         return (node1 > node2)
 
 
+def cut_cmp(cut1, cut2):
+    """Compare cut1 (list) and cut2 (list)
+    """
+    support1 = 0
+    support2 = 0
+    for t in cut1:
+        support1 += gl_att_tree[-1][t].support
+    for t in cut2:
+        support2 += gl_att_tree[-1][t].support
+    if support1 != support2:
+        return support1 - support2
+    else:
+        return (node1 > node2)
+
+
 def get_MaxBTD(trans):
     """Get BTD from cluster.
     Poulis define BTD of a cluster as the max BTD of all possbile
@@ -153,27 +170,235 @@ def get_KM(trans, k=25, m=2):
     """Get lowest common cut for tran1 and tran2.
     Transaction generalization need to find out LCC.
     """
-    return AA(trans, k, m)
+    cut = AA(trans, k, m)
+    if __DEBUG:
+        print "Cut generated"
+        print cut
+    return trans_gen(trans[:], cut)
+
+
+def expand_tran(tran, cut=None):
+    """expand transaction according to generalization cut
+    """
+    ex_tran = tran[:]
+    # extend t with all parents
+    for temp in tran:
+        for t in gl_att_tree[-1][temp].parent:
+            if not t.value in ex_tran: 
+                ex_tran.append(t.value)
+    ex_tran.remove('*')
+    # sort ex_tran
+    ex_tran.sort(cmp=tran_cmp, reverse=True)
+    """if __DEBUG:
+        print ex_tran
+    """
+    if cut:
+        for temp in ex_tran:
+            ancestor = [parent.value for parent in gl_att_tree[-1][temp].parent]
+            for t in cut:
+                if t in ancestor:
+                    ex_tran.remove(temp)
+    return ex_tran
+
+
+def init_count_tree():
+    """initialize a new cout tree
+    """
+    # initialize count tree
+    ctree = CountTree('*')
+    for t in gl_count_tree:
+        CountTree(t, ctree)
+    return ctree
+
+
+def check_overlap(tran):
+    """Check if items can joined with each other
+    """
+    len_tran = len(tran)
+    for i in range(len_tran):
+        for j in range(len_tran):
+            if i == j:
+                continue
+            ancestor = [parent.value for parent in gl_att_tree[-1][tran[j]].parent]
+            if tran[i] in ancestor:
+                return False
+    return True
+
+
+def check_cover(tran, cut):
+    """Check if tran if covered by cut
+    return True if covered, False if not
+    """
+    if len(cut) == 0:
+        return False
+
+    for temp in tran:
+        ancestor = [parent.value for parent in gl_att_tree[-1][temp].parent]
+        for t in cut:
+            if t in ancestor:
+                break
+        else:
+            return True
+    return False
 
 
 def create_count_tree(trans, m):
-    """creat a count_tree
+    """Creat a count_tree
     """
-    return
+    ctree = init_count_tree()
+    # extend t and insert to count tree
+    for temp in trans:
+        ex_t = expand_tran(t)
+        for i in range(1, m+1):
+            temp = permutations(ex_t, i)
+            # convet tuple to list
+            temp = [list(combination) for combination in temp]
+            for t in temp:
+                if check_overlap(t):
+                    t.sort(cmp=tran_cmp, reverse=True)
+                    ctree.add_to_tree(t)
+    return ctree
 
 
-def AA(trans, k=25, m=2):
-    """Apriori-based anonymization for transaction anonymization. 
-    Developed by Manolis Terrovitis
+def get_cut(tran, ctree, k):
+    """Given a tran, return cut making it k-anonymity with mini information
+    return cut is a list e.g. ['A', 'B']
     """
-    return
+    ancestor = []
+    cut = []
+    # get all ancestors
+    for t in tran:
+        parents = gl_att_tree[-1][t].parent[:]
+        parents.append(gl_att_tree[-1][t])
+        for p in parents:
+            if not p.value in ancestor:
+                ancestor.append(p.value)
+    ancestor.remove('*')
+    # generate all possible cut for tran
+    len_ance = len(ancestor)
+    for i in range(1, len_ance+1):
+        temp = permutations(ancestor, i)
+        # convet tuple to list
+        temp = [list(combination) for combination in temp]
+        # remove combination with overlap
+        for t in temp:
+            if check_overlap(t) == False:
+                del t
+            elif len(t):
+                cut.append(t)
+    # remove cut cannot cover tran
+    for t in cut:
+        if check_cover(tran, t):
+            del t
+    # sort by support, the same effect as sorting by NCP
+    # pdb.set_trace()
+    cut.sort(cmp=cut_cmp)
+    if __DEBUG:
+        print cut
+    # return 
+    for t in cut:
+        if t >= k:
+            return t
+
+
+def merge_cut(cut, new_cut):
+    for t in new_cut:
+        if not t in cut:
+            cut.append(t)
+    # merge coverd and overlaped
+    cut.sort(cmp=tran_cmp, reverse=True)
+    delete_list = []
+    len_cut = len(cut)
+    for i in range(len_cut):
+        temp = cut[i]
+        check_list = []
+        for j in range(i, len_cut):
+            t = cut[j]
+            ancestor = [parent.value for parent in gl_att_tree[-1][t].parent]
+            if temp in ancestor:
+                check_list.append(t)
+        child_list = [child.value for child in gl_att_tree[-1][temp].child]
+        for c in child_list:
+            if not c in check_list:
+                delete_list.extend(check_list)
+                break
+        else:
+            delete_list.append(temp)
+    delete_list = list(set(delete_list))
+    for t in delete_list:
+        cut.remove(t)
+    return cut
+
+
+def R_DA(ctree, cut, k=25, m=2):
+    """Recursively get cut. Each branch can be paralleled
+    """
+    # pdb.set_trace()
+    if ctree.level > 0 and check_cover([ctree.value], cut):
+        return []
+    if len(ctree.child):
+        for temp in ctree.child:
+            new_cut = R_DA(temp, cut, k, m)
+            merge_cut(cut, new_cut)
+    elif ctree.level >= 1 and ctree.support < k:
+        tran = ctree.prefix[:]
+        tran.append(ctree.value)
+        return get_cut(tran, ctree, k)
+    return cut
 
 
 def DA(trans, k=25, m=2):
     """Direct anonymization for transaction anonymization.
     Developed by Manolis Terrovitis
     """
-    return
+    cut_cover = {}
+    ctree = create_count_tree(trans, m)
+    if __DEBUG:
+        print "Cut Tree"
+        ctree.print_tree
+    cut = []
+    R_DA(ctree, cut, k, m)
+    return gl_cut[:]
+
+
+def AA(trans, k=25, m=2):
+    """Apriori-based anonymization for transaction anonymization. 
+    Developed by Manolis Terrovitis
+    """
+    cut = []
+    for i in range(1, m+1):
+        ctree = init_count_tree()
+        for t in trans:
+            ex_t = expand_tran(t, cut)
+            temp = permutations(ex_t, i)
+            # convet tuple to list
+            temp = [list(t) for t in temp]
+            for t in temp:
+                if check_overlap(t):
+                    t.sort(cmp=tran_cmp, reverse=True)
+                    ctree.add_to_tree(t)
+        # run DA
+        new_cut = R_DA(ctree, cut, k, i)
+        merge_cut(cut, new_cut)
+    return cut
+
+
+def trans_gen(trans, cut):
+    """Generalize transaction according to ger cut
+    """
+    gen_trans = []
+    for tran in trans:
+        gen_tran = []
+        for t in tran:
+            ancestor = [parent.value for parent in gl_att_tree[-1][t].parent]
+            for c in cut:
+                if c in ancestor:
+                    gen_tran.append(c)
+                else:
+                    gen_tran.append(t)
+        gen_trans.append(list(set(gen_tran)))
+    return gen_trans
+
 
 
 def middle(record1, record2):
@@ -245,6 +470,7 @@ def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
         del sorted_tuple[-1]
     # return largest
     return sorted_tuple[-1][1]
+
 
 def find_best_KNN(record, k, data):
     """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
@@ -318,9 +544,6 @@ def find_merge_cluster_T(index, clusters):
 
 def CLUSTER(data, k=25):
     """Group record according to QID distance. KNN"""
-    global gl_att_tree
-    global gl_treecover
-    global gl_leaf_to_path
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
@@ -450,34 +673,6 @@ def TMERGE_T():
 def TMERGE_RT():
     return
 
-
-def num_analysis(attlist):
-    """plot distribution of attlist"""
-    import operator
-    temp = {}
-    for t in attlist:
-        t = int(t)
-        if not t in temp.keys():
-            temp[t] = 1
-        else:
-            temp[t] += 1
-    # sort the dict
-    items = temp.items()
-    items.sort()
-    value = []
-    count = []
-    for k, v  in items:
-        value.append(k)
-        count.append(v)
-    # pdb.set_trace()
-    xlabel('value')
-    ylabel('count')
-    plt.hist(count, bins=value, normed=1, histtype='step', rwidth=0.8)
-    # legend(loc='upper left')
-    # grid on
-    grid(True)
-    show()
-
     
 def read_tree_file(treename):
     """read tree data from treename"""
@@ -513,8 +708,22 @@ def read_tree_file(treename):
     gl_treecover.append(treecover)
     gl_leaf_to_path.append(leaf_to_path)
     gl_att_tree.append(nodelist)
-
     treefile.close()
+
+
+def init_gl_count_tree():
+    """Init count tree order according to generalizaiton hierarchy
+    """
+    global gl_count_tree
+    # creat count tree
+    gl_count_tree = []
+    for k, v in gl_att_tree[-1].iteritems():
+        gl_count_tree.append(k)
+    # delete *, and sort reverse
+    gl_count_tree.remove('*')
+    gl_count_tree.sort(cmp=tran_cmp, reverse=True)
+    if __DEBUG:
+        print gl_count_tree
 
 
 def readtree():
@@ -526,6 +735,7 @@ def readtree():
     gl_att_name.append(gl_conditionatt[2])
     for t in gl_att_name:
         read_tree_file(t)
+    init_gl_count_tree()
 
 
 def readdata():
@@ -586,106 +796,6 @@ def readdata():
     conditionfile.close()
 
 
-def count_query(data, att_select, value_select):
-    "input query att_select and value_select,return count()"
-    count = 0
-    lenquery = len(att_select)
-    for temp in data:
-        for i in range(lenquery):
-            index = att_select[i]
-            # value(list) and temp[index](value)
-            value = value_select[i]
-            if index != 7:
-                if not temp[index] in value:
-                    break
-            else:
-                # gen value
-                flag = False
-                for t in value:
-                    if t in temp[index]:
-                        flag = True
-                if not flag:
-                    break
-        else:
-            count += 1
-    return count
-
-
-def cluster_to_list(clusters):
-    datalist = []
-    for t in clusters:
-        # relational generalization
-        for i in range(len(t.member)):
-            datalist.add(t.middle)
-        
-        # transactional generalization
-
-    return datalist
-
-
-
-
-
-def average_relative_error(data, result, qd=2, s=5):
-    "return average relative error of anonmized microdata,qd denote the query dimensionality, b denot seleciton of query"
-    global att_cover
-    are = 0.0
-    lenresult = len(result)
-    transform_result = []
-    blist = []
-    seed = math.pow(s*1.0/100, 1.0/(qd +1))
-    for i in range(8):
-        blist.append(math.ceil(len(att_cover[i]) * seed))
-    for i in range(lenresult):
-        temp = anatomy_transform(result[i])
-
-
-
-        # pdb.set_trace()
-        transform_result.extend(temp)
-
-    num = 100
-    zeroare = 0
-    # pdb.set_trace()
-    for turn in range(num):
-        att_select = []
-        value_select = []
-        i = 0 
-        while i < qd:
-            t = random.randint(0,6)
-            if t not in att_select:
-                att_select.append(t)
-            else:
-                i -= 1
-            i += 1
-        att_select.append(7)
-        lenquery = len(att_select)
-        
-        # pdb.set_trace()
-        for i in range(lenquery):
-            index = att_select[i]
-            temp = []
-            count = 0
-            while count < blist[index]:
-                t = random.choice(att_cover[index])
-                if t not in temp:
-                    temp.append(t)
-                else:
-                    count -= 1
-                count += 1
-            value_select.append(temp)
-        acout = count_query(data, att_select, value_select)
-        rcout = count_query(transform_result, att_select, value_select)
-        if acout != 0:
-            are += abs(acout - rcout) * 1.0 / acout
-        else:
-            zeroare += 0 
-    print "Times=%d when Query on microdata is Zero" % zeroare
-    if num == zeroare:
-        return 0            
-    return are / (num - zeroare)
-
-
 if __name__ == '__main__':
     #read gentree tax
     readtree()
@@ -701,9 +811,13 @@ if __name__ == '__main__':
     
     clusters = CLUSTER(gl_databack[:200],25)
     clusters = RMERGE_T(clusters)
-    for i, t in enumerate(clusters):
-        print "cluster %d" % i 
-        print t.middle        
+    trans = []
+    for c in clusters:
+        for t in c.member:
+            trans.append(t[-1])
+    trans = get_KM(trans)
+    print trans
+
     print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"
     
