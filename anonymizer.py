@@ -247,8 +247,8 @@ def create_count_tree(trans, m):
     """
     ctree = init_count_tree()
     # extend t and insert to count tree
-    for temp in trans:
-        ex_t = expand_tran(t)
+    for tran in trans:
+        ex_t = expand_tran(tran)
         for i in range(1, m+1):
             temp = permutations(ex_t, i)
             # convet tuple to list
@@ -358,7 +358,7 @@ def DA(trans, k=25, m=2):
         ctree.print_tree
     cut = []
     R_DA(ctree, cut, k, m)
-    return gl_cut[:]
+    return cut[:]
 
 
 def AA(trans, k=25, m=2):
