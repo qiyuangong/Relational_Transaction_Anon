@@ -2,7 +2,7 @@
 #coding=utf-8
 
 from generalization import GenTree, Cluster, CountTree
-from AA import AA, DA, trans_gen
+from Apriori_based_Anon import AA, DA, trans_gen
 from datetime import datetime
 from random import randrange
 import pdb
@@ -18,8 +18,6 @@ gl_threshold = 100000
 gl_att_tree = []
 # databack store all reacord for dataset
 gl_databack = []
-# count tree root
-gl_count_tree = []
 
 # Poulis set k=25, m=2 as default!
 
@@ -125,7 +123,7 @@ def get_BTD(tran1, tran2):
     to compute distance between transactions rather than Tum. As Tum
     cause huge runing time.
     """
-    satree = gl_att_tree[-1]['*'].keys()
+    satree = gl_att_tree[-1].keys()
     andcount = 1
     xorcount = 1
     for t in satree:
@@ -141,7 +139,7 @@ def get_KM(trans, k=25, m=2):
     """Get lowest common cut for tran1 and tran2.
     Transaction generalization need to find out LCC.
     """
-    cut = AA(trans, k, m)
+    cut = AA(gl_att_tree[-1], trans, k, m)
     if __DEBUG:
         print "Cut generated"
         print cut
@@ -151,7 +149,7 @@ def get_KM(trans, k=25, m=2):
 def middle(record1, record2):
     """Compute relational generalization result of record1 and record2"""
     middle = []
-    for i in range(gl_att_QI - 1):
+    for i in range(len(gl_att_tree) - 2):
         middle.append(get_LCA(i, record1[i], record2[i]))
     return middle
 
@@ -289,8 +287,10 @@ def find_merge_cluster_T(index, clusters):
     return (min_index, min_distance, min_mid)
 
 
-def CLUSTER(data, k=25):
+def CLUSTER(att_tree, data, k=25):
     """Group record according to QID distance. KNN"""
+    global gl_att_tree
+    gl_att_tree = att_tree
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"

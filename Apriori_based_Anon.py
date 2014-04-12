@@ -255,7 +255,6 @@ def AA(att_tree, trans, k=25, m=2):
                 if not check_overlap(t):
                     t.sort(cmp=tran_cmp, reverse=True)
                     ctree.add_to_tree(t)
-        pdb.set_trace()
         # run DA
         new_cut = R_DA(ctree, cut, k, i)
         merge_cut(cut, new_cut)

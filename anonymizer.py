@@ -2,7 +2,7 @@
 #coding=utf-8
 
 from read_data import readdata, readtree
-from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T
+from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, get_KM
 import sys
 from ftp_upload import ftpupload
 import socket
@@ -10,18 +10,18 @@ import socket
 
 if __name__ == '__main__':
     #read gentree tax
-    readtree()
+    att_tree = readtree()
     #read record
-    readdata()
+    data = readdata()
     # pdb.set_trace()
-    clusters = CLUSTER(gl_databack[:200],25)
+    clusters = CLUSTER(att_tree, data[:200], 25)
     clusters = RMERGE_R(clusters)
     for i, t in enumerate(clusters):
         print "cluster %d" % i 
         print t.middle
     print "Finish RT-Anon based on RMERGE_R\n"
     
-    clusters = CLUSTER(gl_databack[:200],25)
+    clusters = CLUSTER(att_tree, data[:200],25)
     clusters = RMERGE_T(clusters)
     trans = []
     for c in clusters:
