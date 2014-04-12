@@ -33,8 +33,8 @@ if __name__ == '__main__':
         result.extend(temp)
     if _DEBUG:
         print result
-    average_relative_error(att_tree, data, result)
-
+    are = average_relative_error(att_tree, data, result)
+    print "Average Realtive Error: %d" %are
     print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"
     

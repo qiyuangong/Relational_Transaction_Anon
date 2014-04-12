@@ -55,6 +55,7 @@ def count_query(data, att_select, value_select):
     for record in data:
         for i in range(lenquery):
             index = att_select[i]
+            value = value_select[i]
             flag = False
             for t in value:
                 if t in record[index]:
@@ -85,13 +86,12 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     q_times = 1
     zeroare = 0
     for turn in range(q_times):
-        pdb.set_trace()
         att_select = []
         value_select = []
         i = 0
         # select QI att
         while i < qd:
-            t = random.randint(0,6)
+            t = random.randint(0, QI)
             if t not in att_select:
                 att_select.append(t)
             else:
@@ -102,7 +102,7 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
         for i in range(qd+1):
             index = att_select[i]
             temp = []
-            att_cover = att_roots[i].cover.keys()
+            att_cover = att_roots[index].cover.keys()
             count = 0
             while count < blist[index]:
                 t = random.choice(att_cover)
@@ -119,9 +119,9 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
         else:
             zeroare += 0 
     print "Times=%d when Query on microdata is Zero" % zeroare
-    if num == zeroare:
+    if q_times == zeroare:
         return 0            
-    return are / (num - zeroare)
+    return are / (q_times - zeroare)
 
 
 def num_analysis(attlist):
