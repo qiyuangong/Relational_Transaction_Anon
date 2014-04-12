@@ -8,7 +8,7 @@
 from generalization import GenTree
 
 
-__DEBUG = True
+__DEBUG = False
 gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
 gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
 gl_attlist = [3,4,5,6,13,15,16]

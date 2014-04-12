@@ -2,11 +2,14 @@
 #coding=utf-8
 
 from read_data import readdata, readtree
-from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, get_KM
+from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, gen_cluster
+from evaluation import average_relative_error
 import sys
 from ftp_upload import ftpupload
 import socket
 
+
+_DEBUG = True
 
 if __name__ == '__main__':
     #read gentree tax
@@ -14,21 +17,23 @@ if __name__ == '__main__':
     #read record
     data = readdata()
     # pdb.set_trace()
-    clusters = CLUSTER(att_tree, data[:200], 25)
-    clusters = RMERGE_R(clusters)
-    for i, t in enumerate(clusters):
-        print "cluster %d" % i 
-        print t.middle
-    print "Finish RT-Anon based on RMERGE_R\n"
+    # clusters = CLUSTER(att_tree, data[:200], 25)
+    # clusters = RMERGE_R(clusters)
+    # for i, t in enumerate(clusters):
+    #     print "cluster %d" % i 
+    #     print t.middle
+    # print "Finish RT-Anon based on RMERGE_R\n"
     
     clusters = CLUSTER(att_tree, data[:200],25)
     clusters = RMERGE_T(clusters)
-    trans = []
+    result = []
+    
     for c in clusters:
-        for t in c.member:
-            trans.append(t[-1])
-    trans = get_KM(trans)
-    print trans
+        temp = gen_cluster(c)
+        result.extend(temp)
+    if _DEBUG:
+        print result
+    average_relative_error(att_tree, data, result)
 
     print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"

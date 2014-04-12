@@ -118,6 +118,7 @@ def get_MaxBTD(trans):
             result_BTD.append(get_BTD(trans[i], trans[j]))
     return max(result_BTD)
 
+
 def get_BTD(tran1, tran2):
     """Poulis suggested to use BTD (Bit-vector Transaction Distance)
     to compute distance between transactions rather than Tum. As Tum
@@ -135,9 +136,9 @@ def get_BTD(tran1, tran2):
             xorcount += 1
     return (xorcount * 1.0 / andcount)
 
-def get_KM(trans, k=25, m=2):
-    """Get lowest common cut for tran1 and tran2.
-    Transaction generalization need to find out LCC.
+
+def T_Gen(trans, k=25, m=2):
+    """transaction generalization based on AA
     """
     cut = AA(gl_att_tree[-1], trans, k, m)
     if __DEBUG:
@@ -146,10 +147,26 @@ def get_KM(trans, k=25, m=2):
     return trans_gen(trans[:], cut)
 
 
+def gen_cluster(cluster, k=25, m=2):
+    """generalize cluster using relational and transaction generalization
+    return record list
+    """
+    gen_result = []
+    member = cluster.member
+    trans = [t[-1] for t in member]
+    gen_trans = T_Gen(trans, k, m)
+    for i in range(len(member)):
+        # relational generalization
+        temp = cluster.middle[:]
+        temp.append(gen_trans[i])
+        gen_result.append(temp)
+    return gen_result
+
+
 def middle(record1, record2):
     """Compute relational generalization result of record1 and record2"""
     middle = []
-    for i in range(len(gl_att_tree) - 2):
+    for i in range(len(gl_att_tree) - 1):
         middle.append(get_LCA(i, record1[i], record2[i]))
     return middle
 
