@@ -11,7 +11,8 @@ from generalization import GenTree
 __DEBUG = False
 gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
 gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
-gl_attlist = [3,4,5,6,13,15,16]
+# Only 5 relational attributes and 1 transaction attribute are selected (according to Poulis's paper)
+gl_attlist = [3,4,6,13,16]
 gl_att_name = []
 # att_tree store root node for each att
 gl_att_tree = []

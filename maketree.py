@@ -50,7 +50,7 @@ def gen_ICD9CODX_tree():
 def gen_income_tree():
     "We split this tree by i,100,1000,10000,*(5 layers) min = -40 000, max = 200 000"
     treefile = open('data/treefile_income.txt','w')
-    for i in range(-40000, 200001):
+    for i in range(-40000, 220001):
         i1 = i / 100
         i2 = i / 1000
         i3 = i / 10000

@@ -13,7 +13,7 @@ _DEBUG = True
 
 if __name__ == '__main__':
     #read gentree tax
-    att_tree = readtree()
+    att_trees = readtree()
     #read record
     data = readdata()
     # pdb.set_trace()
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     #     print t.middle
     # print "Finish RT-Anon based on RMERGE_R\n"
     
-    clusters = CLUSTER(att_tree, data[:200],25)
+    clusters = CLUSTER(att_trees, data[:], 25)
     clusters = RMERGE_T(clusters)
     result = []
     
@@ -33,7 +33,8 @@ if __name__ == '__main__':
         result.extend(temp)
     if _DEBUG:
         print result
-    are = average_relative_error(att_tree, data, result)
+    print "Begin Evaluation"
+    are = average_relative_error(att_trees, data, result)
     print "Average Realtive Error: %d" %are
     print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"

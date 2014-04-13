@@ -5,8 +5,6 @@ import random
 
 
 _DEBUG = True
-QI = 7
-
 
 def NCP(gen_tran, att_tree):
     """Compute NCP (Normalized Certainty Penalty) 
@@ -74,50 +72,43 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     len_att = len(att_trees)
     blist = []
     att_roots = [t['*'] for t in att_trees]
+    att_cover = []
     seed = math.pow(s*1.0/100, 1.0/(qd +1))
     # transform generalized result to coverage
     tran_result = gen_to_cover(att_trees, result)
     # compute b for each attributes
     for i in range(len_att):
-        blist.append(math.ceil(att_roots[i].support * seed))
+        blist.append(int(math.ceil(att_roots[i].support * seed)))
     if _DEBUG:
         print "blist %s" % blist
     # query times, normally it's 1000
-    q_times = 1
+    q_times = 10
     zeroare = 0
+    for i in range(len_att):
+        att_cover.append(att_roots[i].cover.keys())
     for turn in range(q_times):
         att_select = []
         value_select = []
         i = 0
         # select QI att
-        while i < qd:
-            t = random.randint(0, QI)
-            if t not in att_select:
-                att_select.append(t)
-            else:
-                i -= 1
-            i += 1
+        print "ARE %d" % turn
+        att_select = random.sample(range(0, len_att-1), qd)
         # append SA. So len(att_select) == qd+1
-        att_select.append(QI)
+        att_select.append(len_att-1)
+        print "Att select %s" % att_select
         for i in range(qd+1):
             index = att_select[i]
             temp = []
-            att_cover = att_roots[index].cover.keys()
             count = 0
-            while count < blist[index]:
-                t = random.choice(att_cover)
-                if t not in temp:
-                    temp.append(t)
-                else:
-                    count -= 1
-                count += 1
+            temp = random.sample(att_cover[index], blist[index])
             value_select.append(temp)
+        print "Begin query"
         acout = count_query(data, att_select, value_select)
         rcout = count_query(tran_result, att_select, value_select)
         if acout != 0:
             are += abs(acout - rcout) * 1.0 / acout
         else:
-            zeroare += 0 
+            zeroare += 1 
     print "Times=%d when Query on microdata is Zero" % zeroare
     if q_times == zeroare:
         return 0            
