@@ -12,7 +12,7 @@ import socket
 from itertools import combinations
 
 
-__DEBUG = True
+__DEBUG = False
 # QI number
 # att_tree store root node for each att
 gl_att_tree = []
@@ -64,12 +64,29 @@ def expand_tran(tran, cut=None):
         print "tran %s " % tran
         print "ex_tran %s" % ex_tran
     if cut:
+        delete_list = []
         for temp in ex_tran:
             ancestor = [parent.value for parent in gl_att_tree[temp].parent]
             for t in cut:
                 if t in ancestor:
-                    ex_tran.remove(temp)
+                    delete_list.append(temp)
+                    break
+        for t in delete_list:
+            ex_tran.remove(t)
     return ex_tran
+
+
+def init_gl_count_tree():
+    """Init count tree order according to generalizaiton hierarchy
+    """
+    global gl_count_tree
+    # creat count tree
+    gl_count_tree = []
+    for k, v in gl_att_tree.iteritems():
+        gl_count_tree.append(k)
+    # delete *, and sort reverse
+    gl_count_tree.remove('*')
+    gl_count_tree.sort(cmp=tran_cmp, reverse=True)
 
 
 def init_count_tree():
@@ -127,7 +144,7 @@ def create_count_tree(trans, m):
             # convet tuple to list
             temp = [list(combination) for combination in temp]
             for t in temp:
-                if not check_overlap(t):
+                if not check_overlap(t) and len(t):
                     t.sort(cmp=tran_cmp, reverse=True)
                     ctree.add_to_tree(t)
     return ctree
@@ -166,7 +183,6 @@ def get_cut(ctree, k):
         if check_cover(tran, t):
             cut.append(t) 
     # sort by support, the same effect as sorting by NCP
-    # pdb.set_trace()
     cut.sort(cmp=cut_cmp)
     for t in cut:
         t.sort(cmp=tran_cmp, reverse=True)
@@ -211,15 +227,20 @@ def merge_cut(cut, new_cut):
 def R_DA(ctree, cut, k=25, m=2):
     """Recursively get cut. Each branch can be paralleled
     """
-    # pdb.set_trace()
     if ctree.level > 0 and check_cover([ctree.value], cut):
+        return []
+    # leaf node means that this node value is not generalized
+    if len(gl_att_tree[ctree.value].child) == 0:
         return []
     if len(ctree.child):
         for temp in ctree.child:
             new_cut = R_DA(temp, cut, k, m)
             merge_cut(cut, new_cut)
-    elif ctree.level >= 1 and ctree.support < k and ctree.support > 0:
-        return get_cut(ctree, k)
+    elif ctree.support < k and ctree.support > 0:
+        new_cut = get_cut(ctree, k)
+        merge_cut(cut, new_cut)
+    else:
+        return []
     return cut
 
 
@@ -229,6 +250,7 @@ def DA(att_tree, trans, k=25, m=2):
     """
     global gl_att_tree
     gl_att_tree = att_tree
+    init_gl_count_tree()
     cut = []
     ctree = create_count_tree(trans, m)
     if __DEBUG:
@@ -243,21 +265,25 @@ def AA(att_tree, trans, k=25, m=2):
     """
     global gl_att_tree
     gl_att_tree = att_tree
+    init_gl_count_tree()
     cut = []
     for i in range(1, m+1):
+        # Herein is the reason why previous AA return different cut from DA
+        # Beacuse AA only reduce ith-items for count tree, 1..i-1 still needed
         ctree = init_count_tree()
         for t in trans:
+            temp = []
             ex_t = expand_tran(t, cut)
-            temp = combinations(ex_t, i)
+            for j in range(1, i+1):
+                temp.extend(combinations(ex_t, j))
             # convet tuple to list
             temp = [list(t) for t in temp]
             for t in temp:
-                if not check_overlap(t):
+                if not check_overlap(t) and len(t):
                     t.sort(cmp=tran_cmp, reverse=True)
                     ctree.add_to_tree(t)
         # run DA
-        new_cut = R_DA(ctree, cut, k, i)
-        merge_cut(cut, new_cut)
+        R_DA(ctree, cut, k, i)
     return cut
 
 
@@ -277,24 +303,3 @@ def trans_gen(trans, cut):
         gen_trans.append(list(set(gen_tran)))
     return gen_trans
 
-
-def init_gl_count_tree():
-    """Init count tree order according to generalizaiton hierarchy
-    """
-    global gl_count_tree
-    # creat count tree
-    gl_count_tree = []
-    for k, v in gl_att_tree.iteritems():
-        gl_count_tree.append(k)
-    # delete *, and sort reverse
-    gl_count_tree.remove('*')
-    gl_count_tree.sort(cmp=tran_cmp, reverse=True)
-
-
-def transform_result(data, trans):
-    """
-    Replace transactions part with generalized transactions
-    """
-    for i in range(len(data)):
-        data[i][-1] = trans[i]
-    return data

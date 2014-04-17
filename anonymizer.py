@@ -9,7 +9,7 @@ from ftp_upload import ftpupload
 import socket
 
 
-_DEBUG = True
+_DEBUG = False
 
 if __name__ == '__main__':
     #read gentree tax

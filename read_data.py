@@ -17,13 +17,16 @@ gl_att_name = []
 # att_tree store root node for each att
 gl_att_tree = []
 
-def readtree():
+def readtree(flag=0):
     """read tree from data/tree_*.txt, store them in gl_att_tree"""
     global gl_att_name
     print "Reading Tree"
     for t in gl_attlist:
         gl_att_name.append(gl_useratt[t])
-    gl_att_name.append(gl_conditionatt[2])
+    if flag:
+        gl_att_name.append(gl_conditionatt[2])
+    else:
+        gl_att_name.append('even')
     for t in gl_att_name:
         read_tree_file(t)
     return gl_att_tree

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #coding=utf-8
 import string
+import math
 
 #generate tree from treeseed
 def gen_ICD9CODX_tree():
@@ -47,6 +48,63 @@ def gen_ICD9CODX_tree():
     treeseed.close()
     treefile.close()
 
+def gen_even_tree(fanout):
+    """This generalization hierarchy is defined according to even fan-out (average distribution).
+    For large dataset fanout = 5, for small dataset fanout = 4
+    """
+    treeseed = open('data/treeseed_even.txt','rU')
+    treefile = open('data/treefile_even.txt','w')
+
+    for line in treeseed:
+        line = line.strip()
+        temp = line.split(',')
+        prefix = ''
+        str_len = len(temp[0])
+        if temp[0][0] == 'E' or temp[0][0] == 'V':
+            prefix = temp[0][0]
+            temp[0] = temp[0][1:]
+            temp[1] = temp[1][1:]
+            str_len -= 1
+        bottom = string.atoi(temp[0])
+        top = string.atoi(temp[1])
+        # get height
+        temp = top - bottom
+        height = 0
+        flag = True
+        while temp:
+            temp /= fanout
+            height += 1
+        level_len = []
+        tree = []
+        for i in range(height):
+            level_len = pow(fanout, i)
+            level_split = []
+            temp = bottom
+            while temp <= top:
+                stemp = ''
+                if level_len == 1:
+                    stemp = prefix+str(temp).rjust(str_len, '0')
+                elif temp+level_len-1 > top:
+                    stemp = prefix+str(temp).rjust(str_len, '0')
+                    stemp += ','+ prefix+str(top).rjust(str_len, '0')
+                else:
+                    stemp = prefix+str(temp).rjust(str_len, '0')
+                    stemp += ','+ prefix+str(temp+level_len-1).rjust(str_len, '0')
+                level_split.append(stemp)
+                temp += level_len
+            tree.append(level_split)
+        for i in range(len(tree[0])):
+            w_line = ''
+            temp = i
+            for index in range(height):
+                w_line += tree[index][temp] + ';'
+                temp /= fanout
+            w_line += line + ';*\n'
+            treefile.write(w_line)
+    treeseed.close()
+    treefile.close()
+
+
 def gen_income_tree():
     "We split this tree by i,100,1000,10000,*(5 layers) min = -40 000, max = 200 000"
     treefile = open('data/treefile_income.txt','w')
@@ -60,6 +118,7 @@ def gen_income_tree():
     treefile.close()
     return
 
+
 def gen_DOBYY_tree():
     "We define a birth year tree with min = 1900 and max = 2010, and coverage splited by 5, 10, 50 year"
     treefile = open('data/treefile_DOBYY.txt','w')
@@ -72,7 +131,9 @@ def gen_DOBYY_tree():
         treefile.write(temp)
     treefile.close()
 
+
 if __name__ == '__main__':
     # gen_income_tree()
     # gen_DOBYY_tree()
-    
+    # gen_even_tree(5)
+    # gen_ICD9CODX_tree()

@@ -66,7 +66,7 @@ def count_query(data, att_select, value_select):
     return count
 
 
-def average_relative_error(att_trees, data, result, qd=2, s=5):
+def average_relative_error(att_trees, data, result, qd=2, s=0.5):
     "return average relative error of anonmized microdata,qd denote the query dimensionality, b denot seleciton of query"
     are = 0.0
     len_att = len(att_trees)
@@ -91,25 +91,25 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
         value_select = []
         i = 0
         # select QI att
-        print "ARE %d" % turn
         att_select = random.sample(range(0, len_att-1), qd)
         # append SA. So len(att_select) == qd+1
         att_select.append(len_att-1)
-        print "Att select %s" % att_select
+        if _DEBUG:
+            print "ARE %d" % turn
+            print "Att select %s" % att_select
         for i in range(qd+1):
             index = att_select[i]
             temp = []
             count = 0
             temp = random.sample(att_cover[index], blist[index])
             value_select.append(temp)
-        print "Begin query"
         acout = count_query(data, att_select, value_select)
         rcout = count_query(tran_result, att_select, value_select)
         if acout != 0:
             are += abs(acout - rcout) * 1.0 / acout
         else:
             zeroare += 1 
-    print "Times=%d when Query on microdata is Zero" % zeroare
+    print "Times = %d when Query on microdata is Zero" % zeroare
     if q_times == zeroare:
         return 0            
     return are / (q_times - zeroare)
