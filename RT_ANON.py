@@ -40,6 +40,8 @@ def r_distance(source, target):
     if isinstance(source, Cluster):
         source_mid = source.middle
         source_len = len(source.member)
+    if source_mid == target_mid:
+        return 0
     mid = middle(source_mid, target_mid)
     distance = (source_len+target_len) * NCP(mid)
     return distance
@@ -234,13 +236,17 @@ def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
     return sorted_tuple[-1][1]
 
 
-def find_best_KNN(record, k, data):
+def find_best_KNN(index, k, data):
     """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
     elements = []
     knn = []
-    element = []
+    record = data[index]
     max_distance = 1000000000000
+    # add random seed to cluster
+    insert_to_sorted(knn, [index, 0], k)
     for i, t in enumerate(data):
+        if i == index:
+            continue
         dis = r_distance(record, t)
         if dis < max_distance:
             temp = [i, dis]
@@ -249,7 +255,8 @@ def find_best_KNN(record, k, data):
         elements.append(data[t[0]])
     c = Cluster(elements, middle_for_cluster(elements))
     # delete multiple elements from data according to knn index list
-    data[:] = [t for i, t in enumerate(data) if i not in knn[:][0]]
+    cluster_index = [t[0] for t in knn]
+    data[:] = [t for i, t in enumerate(data) if i not in cluster_index]
     return c
 
 
@@ -312,8 +319,8 @@ def CLUSTER(att_tree, data, k=25):
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
     while len(data) >= k:
-        index = randrange(0, len(data), 2)
-        c =  find_best_KNN(data[index], k, data)
+        index = randrange(len(data))
+        c =  find_best_KNN(index, k, data)
         clusters.append(c)
     # residual assignment
     while len(data) > 0:
@@ -374,6 +381,7 @@ def RMERGE_T(clusters):
     """
     print "Begin RMERGE_T"
     Rum_list = []
+    pdb.set_trace()
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)

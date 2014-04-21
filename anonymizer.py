@@ -35,7 +35,7 @@ if __name__ == '__main__':
         print result
     print "Begin Evaluation"
     are = average_relative_error(att_trees, data, result)
-    print "Average Realtive Error: %d" %are
+    print "Average Realtive Error: %.2f" %are
     print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"
     
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     for i in range(2, 51):
         data = databack[:]
         
-        print "are = %f" % are
+        print "are = %.2f" % are
 
     plotfilename = hostname + '-plot' + filetail
     plotfile = open(filepath + plotfilename,'w')
