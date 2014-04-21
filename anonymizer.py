@@ -5,7 +5,8 @@ from read_data import readdata, readtree
 from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, gen_cluster
 from evaluation import average_relative_error
 import sys
-from ftp_upload import ftpupload
+from ftp_upload import ftp_upload
+from save_result import save_to_file
 import socket
 
 
@@ -33,6 +34,7 @@ if __name__ == '__main__':
         result.extend(temp)
     if _DEBUG:
         print result
+    save_to_file(result)
     print "Begin Evaluation"
     are = average_relative_error(att_trees, data, result)
     print "Average Realtive Error: %.2f" %are

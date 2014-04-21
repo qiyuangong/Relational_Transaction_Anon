@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 #coding=utf-8
 
+import pdb
 from generalization import GenTree, Cluster, CountTree
 from Apriori_based_Anon import AA, DA, trans_gen
-from datetime import datetime
 from random import randrange
-import pdb
-import sys
-from ftp_upload import ftpupload
-import socket
 # from pylab import *
 
 
@@ -381,7 +377,6 @@ def RMERGE_T(clusters):
     """
     print "Begin RMERGE_T"
     Rum_list = []
-    pdb.set_trace()
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
