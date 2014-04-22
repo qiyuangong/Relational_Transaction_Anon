@@ -9,7 +9,7 @@ from random import randrange
 
 
 __DEBUG = False
-gl_threshold = 100000
+gl_threshold = 1
 # att_tree store root node for each att
 gl_att_tree = []
 # databack store all reacord for dataset
@@ -298,7 +298,9 @@ def find_merge_cluster_T(index, clusters):
         records = []
         records.extend(t.member)
         records.extend(source.member)
-        distance = get_MaxBTD(records[:][-1])
+        # get trans from records
+        trans = [t[-1] for t in records]
+        distance = get_MaxBTD(trans)
         if distance < min_distance:
             min_distance = distance
             min_index = i
