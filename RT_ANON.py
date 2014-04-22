@@ -81,8 +81,9 @@ def get_LCA(index, item1, item2):
     parent2.insert(0, gl_att_tree[index][item2])
     minlen = min(len(parent1), len(parent2))
     last_LCA = parent1[-1]
-    for i in range(minlen):
-        if parent1[-i] == parent2[-i]:
+    # note here: when trying to access list reversely, take care of -0
+    for i in range(1, minlen+1):
+        if parent1[-i].value == parent2[-i].value:
             last_LCA = parent1[-i]
         else:
             break 
@@ -307,17 +308,17 @@ def find_merge_cluster_T(index, clusters):
     return (min_index, min_distance, min_mid)
 
 
-def CLUSTER(att_tree, data, k=25):
+def CLUSTER(att_trees, data, k=25):
     """Group record according to QID distance. KNN"""
     global gl_att_tree
-    gl_att_tree = att_tree
+    gl_att_tree = att_trees
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
     while len(data) >= k:
         index = randrange(len(data))
-        c =  find_best_KNN(index, k, data)
-        clusters.append(c)
+        cluster =  find_best_KNN(index, k, data)
+        clusters.append(cluster)
     # residual assignment
     while len(data) > 0:
         t = data.pop()

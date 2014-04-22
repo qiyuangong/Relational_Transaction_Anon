@@ -109,10 +109,11 @@ def gen_income_tree():
     "We split this tree by i,100,1000,10000,*(5 layers) min = -40 000, max = 200 000"
     treefile = open('data/treefile_income.txt','w')
     for i in range(-40000, 220001):
+        i0 = i / 10
         i1 = i / 100
         i2 = i / 1000
         i3 = i / 10000
-        temp = '%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i1 * 100 , i1 * 100 + 99, i2*1000,\
+        temp = '%d;%d,%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i0*10, i0*10 +9, i1 * 100, i1 * 100 + 99, i2*1000,\
          i2*1000 + 999, i3*10000, i3*10000 + 9999)
         treefile.write(temp)
     treefile.close()
@@ -126,8 +127,9 @@ def gen_DOBYY_tree():
         i1 = i / 5
         i2 = i / 10
         i3 = i / 50
-        temp = '%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i1 * 5 , i1 * 5 + 4, i2*10,\
-             i2*10 + 9, i3*50, i3*50 + 49)
+        i4 = i / 100
+        temp = '%d;%d,%d;%d,%d;%d,%d;%d,%d;*\n' % (i, i1 * 5 , i1 * 5 + 4, i2*10,\
+             i2*10 + 9, i3*50, i3*50 + 49, i4*100, i4*100 + 99)
         treefile.write(temp)
     treefile.close()
 
