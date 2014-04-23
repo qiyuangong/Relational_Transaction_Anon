@@ -9,7 +9,7 @@ from random import randrange
 
 
 __DEBUG = False
-gl_threshold = 1
+gl_threshold = 0.65
 # att_tree store root node for each att
 gl_att_tree = []
 # databack store all reacord for dataset
@@ -203,6 +203,20 @@ def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
     # return largest
     return sorted_tuple[-1][1]
 
+def del_index_sorted(sorted_tuple, index):
+    """delete element(index,distance) pair from sorted_tuple(list)
+    according to index
+    """
+    # insert sort
+    i = 0
+    for i in range(len(sorted_tuple)):
+        if sorted_tuple[i][0] == index:
+            break
+    else:
+        print "Error: Can not find index!"
+        return
+    del sorted_tuple[i]
+
 
 def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
     """update element(index,distance) pair to sorted_tuple(list)"""
@@ -212,12 +226,12 @@ def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
         if sorted_tuple[i][0] == temp[0]:
             break
     else:
-        i += 1
+        # pair has already been removed
+        pdb.set_trace()
+        print "Error: pair have been removed"
+        return
     if i < len(sorted_tuple):
         del sorted_tuple[i]
-    else:
-        print "Can not find the pair"
-        return
     # insert new pair
     i = 0
     for i in range(len(sorted_tuple)):
@@ -296,6 +310,8 @@ def find_merge_cluster_T(index, clusters):
     min_mid = []
     for i, t in enumerate(clusters):
         records = []
+        if len(t.member) == 0 or i == index:
+            continue
         records.extend(t.member)
         records.extend(source.member)
         # get trans from records
@@ -306,14 +322,17 @@ def find_merge_cluster_T(index, clusters):
             min_index = i
             min_mid = middle_for_cluster(records)
     # compute Rum distacne for best cluster
-    min_distance = Rum(min_mid)
+    min_distance = NCP(min_mid) * (len(clusters[min_index].member) + \
+                    len(clusters[index].member))
     return (min_index, min_distance, min_mid)
 
 
 def CLUSTER(att_trees, data, k=25):
     """Group record according to QID distance. KNN"""
-    global gl_att_tree
+    global gl_att_tree, gl_databack
+    # copy att_trees and data to gl_att_tree and gl_databack
     gl_att_tree = att_trees
+    gl_databack = data[:]
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
@@ -352,6 +371,9 @@ def RMERGE_R(clusters):
     """
     print "Begin RMERGE_R"
     Rum_list = []
+    ncp_list = []
+    ncp_value = 0.0
+    len_data = len(gl_databack)
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
@@ -361,6 +383,7 @@ def RMERGE_R(clusters):
         index = t_tuple[0]
         r = t_tuple[1]
         mid = t_tuple[2]
+        pdb.set_trace()
         if r <= gl_threshold and c != index:
             clusters[index].merge_group(clusters[c], mid)
             del Rum_list[0]
@@ -379,22 +402,34 @@ def RMERGE_T(clusters):
     assinged to result.
     """
     print "Begin RMERGE_T"
+    ncp_list = []
+    ncp_value = 0.0
     Rum_list = []
+    len_data = len(gl_databack)
     for i, t in enumerate(clusters):
-        temp = [i, Rum(t.middle)]
+        ncp = (len(t.member) * NCP(t.middle) * 1.0) / len_data
+        ncp_list.append(ncp)
+        ncp_value += ncp
+        temp = [i, ncp]
         insert_to_sorted(Rum_list, temp)
     while len(Rum_list) > 1:
         c = Rum_list[0][0]
         t_tuple = find_merge_cluster_T(c, clusters)
         index = t_tuple[0]
-        r = t_tuple[1]
+        new_ncp = t_tuple[1] * 1.0 / len_data
         mid = t_tuple[2]
-        if r <= gl_threshold and c != index:
+        ncp_value += new_ncp
+        ncp_value -= ncp_list[index]
+        ncp_value -= ncp_list[c]
+        if ncp_value <= gl_threshold and c != index:
+            # pdb.set_trace()
             clusters[index].merge_group(clusters[c], mid)
             del Rum_list[0]
-            temp = [index, r]
+            ncp_list[index] = new_ncp
+            temp = [index, new_ncp]
             update_to_sorted(Rum_list, temp)  
         else:
+            # pdb.set_trace()
             break
     return clusters
 
