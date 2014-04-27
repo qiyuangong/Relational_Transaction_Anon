@@ -39,6 +39,7 @@ def r_distance(source, target):
     if source_mid == target_mid:
         return 0
     mid = middle(source_mid, target_mid)
+    # len should be taken into account
     distance = (source_len+target_len) * NCP(mid)
     return distance
 
@@ -427,10 +428,10 @@ def RMERGE_T(clusters):
             del Rum_list[0]
             ncp_list[index] = new_ncp
             temp = [index, new_ncp]
-            update_to_sorted(Rum_list, temp)  
+            update_to_sorted(Rum_list, temp)
         else:
-            # pdb.set_trace()
-            break
+            # exclude first cluster from compare list
+            del Rum_list[0]
     return clusters
 
 
