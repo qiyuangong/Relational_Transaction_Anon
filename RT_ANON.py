@@ -419,19 +419,15 @@ def RMERGE_T(clusters):
         index = t_tuple[0]
         new_ncp = t_tuple[1] * 1.0 / len_data
         mid = t_tuple[2]
-        ncp_value += new_ncp
-        ncp_value -= ncp_list[index]
-        ncp_value -= ncp_list[c]
-        if ncp_value <= gl_threshold and c != index:
-            # pdb.set_trace()
+        if ncp_value <= gl_threshold:
+            ncp_value += new_ncp
+            ncp_value -= ncp_list[index]
+            ncp_value -= ncp_list[c]
             clusters[index].merge_group(clusters[c], mid)
-            del Rum_list[0]
             ncp_list[index] = new_ncp
             temp = [index, new_ncp]
             update_to_sorted(Rum_list, temp)
-        else:
-            # exclude first cluster from compare list
-            del Rum_list[0]
+        del Rum_list[0]
     return clusters
 
 
