@@ -14,7 +14,7 @@ class GenTree(object):
     self.cover: leaf values cover by node
     """
 
-    def __init__(self, value = None, parent = None):
+    def __init__(self, value = None, parent = None, isleaf = False):
         self.value = ''
         self.level = 0
         self.support = 0
