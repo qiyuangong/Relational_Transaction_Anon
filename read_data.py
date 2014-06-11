@@ -13,34 +13,32 @@ gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RA
 gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
 # Only 5 relational attributes and 1 transaction attribute are selected (according to Poulis's paper)
 gl_attlist = [3,4,6,13,16]
-gl_att_name = []
-# att_tree store root node for each att
-gl_att_tree = []
+
 
 def readtree(flag=0):
-    """read tree from data/tree_*.txt, store them in gl_att_tree"""
-    global gl_att_name
+    """read tree from data/tree_*.txt, return them in att_trees"""
+    att_names = []
+    att_trees = []
     print "Reading Tree"
     for t in gl_attlist:
-        gl_att_name.append(gl_useratt[t])
+        att_names.append(gl_useratt[t])
     if flag:
-        gl_att_name.append(gl_conditionatt[2])
+        att_names.append(gl_conditionatt[2])
     else:
-        gl_att_name.append('even')
-    for t in gl_att_name:
-        read_tree_file(t)
-    return gl_att_tree
+        att_names.append('even')
+    for t in att_names:
+        att_trees.append(read_tree_file(t))
+    return att_trees
 
   
 def read_tree_file(treename):
     """read tree data from treename"""
-    global gl_att_tree
     leaf_to_path = {}
-    nodelist = {}
+    att_tree = {}
     prefix = 'data/treefile_'
     postfix = ".txt"
     treefile = open(prefix + treename + postfix,'rU')
-    nodelist['*'] = GenTree('*')
+    att_tree['*'] = GenTree('*')
     if __DEBUG:
         print "Reading Tree" + treename
     for line in treefile:
@@ -55,15 +53,14 @@ def read_tree_file(treename):
             isleaf = False
             if i == len(temp):
                 isleaf = True
-            if not t in nodelist:
+            if not t in att_tree:
                 # always satisfy 
-                nodelist[t] = GenTree(t, nodelist[temp[i - 1]])
-                nodelist[t] = GenTree(t, nodelist[temp[i - 1]], isleaf)
+                att_tree[t] = GenTree(t, att_tree[temp[i - 1]])
+                att_tree[t] = GenTree(t, att_tree[temp[i - 1]], isleaf)
     if __DEBUG:
-        print "Nodes No. = %d" % nodelist['*'].support
-    gl_att_tree.append(nodelist)
+        print "Nodes No. = %d" % att_tree['*'].support
     treefile.close()
-    return nodelist
+    return att_tree
 
 def readdata():
     """read microda for *.txt and return read data"""
@@ -113,9 +110,3 @@ def readdata():
     userfile.close()
     conditionfile.close()
     return data
-
-if __name__ == '__main__':
-    #read gentree tax
-    readtree()
-    #read record
-    data = readdata()

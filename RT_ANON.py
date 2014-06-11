@@ -52,7 +52,7 @@ def NCP(mid):
     # exclude SA values(last one type [])
     for i in range(len(mid) - 1):
         # if support of numerator is 1, then NCP is 0
-        if gl_att_tree[i][mid[i]].support == 1:
+        if gl_att_tree[i][mid[i]].support == 0:
             continue
         ncp +=  gl_att_tree[i][mid[i]].support * 1.0 / gl_att_tree[i]['*'].support
     return ncp
