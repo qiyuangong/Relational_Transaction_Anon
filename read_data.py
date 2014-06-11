@@ -52,9 +52,13 @@ def read_tree_file(treename):
         # copy temp
         temp.reverse()
         for i, t in enumerate(temp):
+            isleaf = False
+            if i == len(temp):
+                isleaf = True
             if not t in nodelist:
                 # always satisfy 
-                nodelist[t] = GenTree(t, nodelist[temp[i - 1]])
+                att_tree[t] = GenTree(t, att_tree[temp[i - 1]])
+                att_tree[t] = GenTree(t, att_tree[temp[i - 1]], isleaf)
     if __DEBUG:
         print "Nodes No. = %d" % nodelist['*'].support
     gl_att_tree.append(nodelist)

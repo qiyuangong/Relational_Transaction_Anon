@@ -96,9 +96,9 @@ def tran_cmp(node1, node2):
     support1 = gl_att_tree[-1][node1].support
     support2 = gl_att_tree[-1][node2].support
     if support1 != support2:
-        return support1 - support2
+        return cmp(support1, support2)
     else:
-        return (node1 > node2)
+        return cmp(node1, node2)
 
 
 def get_MaxBTD(trans):
