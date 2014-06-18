@@ -66,8 +66,8 @@ def UL(mid):
     for t in mid[-1]:
         supp = gl_att_tree[-1][t].support
         supp_sum += supp
-        ul += pow(2, supp)
-    ul = ul / pow(2, supp_sum) * 1.0
+        ul += (2**supp)
+    ul = ul / (2**supp_sum) * 1.0
     return ul
 
 
@@ -124,10 +124,12 @@ def get_BTD(tran1, tran2):
     to compute distance between transactions rather than Tum. As Tum
     cause huge runing time.
     """
-    satree = gl_att_tree[-1].keys()
+    value_list = tran1[:]
+    value_list.extend(tran2[:])
+    value_list = list(set(value_list))
     andcount = 1
     xorcount = 1
-    for t in satree:
+    for t in value_list:
         if t in tran1 and t in tran2:
             andcount += 1
         elif t not in tran1 and t not in tran2:
@@ -203,6 +205,7 @@ def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
         del sorted_tuple[-1]
     # return largest
     return sorted_tuple[-1][1]
+
 
 def del_index_sorted(sorted_tuple, index):
     """delete element(index,distance) pair from sorted_tuple(list)
