@@ -5,7 +5,7 @@
 
 import socket
 from datetime import datetime
-from ftp_upload import ftp_upload
+from utils.ftp_upload import ftp_upload
 
 def save_to_file(result):
     print "Saving result...."

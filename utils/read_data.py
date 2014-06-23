@@ -4,9 +4,7 @@
 # Read data and read tree fuctions for INFORMS data
 # user att ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
 # condition att ['DUID','DUPERSID','ICD9CODX','year']
-
-from generalization import GenTree
-
+from models.gentree import GenTree
 
 __DEBUG = False
 gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
@@ -83,7 +81,7 @@ def readdata():
             userdata[row[2]] = row
     conditiondata = {}
     for i, line in enumerate(conditionfile):
-        line = line[:-2]
+        line = line.strip()
         # ignore first line of csv
         if i == 0:
             continue

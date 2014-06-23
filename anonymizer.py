@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 #coding=utf-8
 
-from read_data import readdata, readtree
+from utils.read_data import readdata, readtree
 from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, gen_cluster
-from evaluation import average_relative_error
+from utils.evaluation import average_relative_error
+from utils.save_result import save_to_file
 import sys
-from ftp_upload import ftp_upload
-from save_result import save_to_file
 import socket
 
 
