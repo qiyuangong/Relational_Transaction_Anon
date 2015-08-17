@@ -2,24 +2,27 @@
 #coding=utf-8
 
 import pdb
-from generalization import GenTree, Cluster, CountTree
+from models.cluster import Cluster
+from models.gentree import GenTree
 from Apriori_based_Anon import AA, DA, trans_gen
 from random import randrange
 # from pylab import *
 
 
 __DEBUG = False
-gl_threshold = 0.65
+THESHOLD = 0.65
 # att_tree store root node for each att
-gl_att_tree = []
+ATT_TREES = []
 # databack store all reacord for dataset
-gl_databack = []
+DATA_BACKUP = []
 
 # Poulis set k=25, m=2 as default!
 
+
 def r_distance(source, target):
-    """Return distance between source (cluster or record) 
-    and target (cluster or record). The distance is based on 
+    """
+    Return distance between source (cluster or record)
+    and target (cluster or record). The distance is based on
     NCP (Normalized Certainty Penalty) on relational part.
     If source or target are cluster, func need to multiply
     source_len (or target_len).
@@ -31,30 +34,30 @@ def r_distance(source, target):
     # check if target is Cluster
     if isinstance(target, Cluster):
         target_mid = target.middle
-        target_len = len(target.member)
+        target_len = len(target)
     # check if souce is Cluster
     if isinstance(source, Cluster):
         source_mid = source.middle
-        source_len = len(source.member)
+        source_len = len(source)
     if source_mid == target_mid:
         return 0
     mid = middle(source_mid, target_mid)
     # len should be taken into account
-    distance = (source_len+target_len) * NCP(mid)
+    distance = (source_len + target_len) * NCP(mid)
     return distance
 
 
 def NCP(mid):
-    """Compute NCP (Normalized Certainty Penalty) 
+    """Compute NCP (Normalized Certainty Penalty)
     when generate record to middle.
     """
     ncp = 0.0
     # exclude SA values(last one type [])
     for i in range(len(mid) - 1):
         # if support of numerator is 1, then NCP is 0
-        if gl_att_tree[i][mid[i]].support == 0:
+        if ATT_TREES[i][mid[i]].support == 0:
             continue
-        ncp +=  gl_att_tree[i][mid[i]].support * 1.0 / gl_att_tree[i]['*'].support
+        ncp += ATT_TREES[i][mid[i]].support * 1.0 / ATT_TREES[i]['*'].support
     return ncp
 
 
@@ -64,37 +67,37 @@ def UL(mid):
     ul = 0
     supp_sum = 0
     for t in mid[-1]:
-        supp = gl_att_tree[-1][t].support
+        supp = ATT_TREES[-1][t].support
         supp_sum += supp
-        ul += (2**supp)
-    ul = ul / (2**supp_sum) * 1.0
+        ul += (2 ** supp)
+    ul = ul / (2 ** supp_sum) * 1.0
     return ul
 
 
 def get_LCA(index, item1, item2):
     """Get lowest commmon ancestor (including themselves)"""
-    # get parent list from 
+    # get parent list from
     if item1 == item2:
         return item1
-    parent1 = gl_att_tree[index][item1].parent[:]
-    parent2 = gl_att_tree[index][item2].parent[:]
-    parent1.insert(0, gl_att_tree[index][item1])
-    parent2.insert(0, gl_att_tree[index][item2])
+    parent1 = ATT_TREES[index][item1].parent[:]
+    parent2 = ATT_TREES[index][item2].parent[:]
+    parent1.insert(0, ATT_TREES[index][item1])
+    parent2.insert(0, ATT_TREES[index][item2])
     minlen = min(len(parent1), len(parent2))
     last_LCA = parent1[-1]
     # note here: when trying to access list reversely, take care of -0
-    for i in range(1, minlen+1):
+    for i in range(1, minlen + 1):
         if parent1[-i].value == parent2[-i].value:
             last_LCA = parent1[-i]
         else:
-            break 
+            break
     return last_LCA.value
 
 
 def tran_cmp(node1, node2):
     """Compare node1 (str) and node2 (str)"""
-    support1 = gl_att_tree[-1][node1].support
-    support2 = gl_att_tree[-1][node2].support
+    support1 = ATT_TREES[-1][node1].support
+    support2 = ATT_TREES[-1][node2].support
     if support1 != support2:
         return cmp(support1, support2)
     else:
@@ -142,7 +145,7 @@ def get_BTD(tran1, tran2):
 def T_Gen(trans, k=25, m=2):
     """transaction generalization based on AA
     """
-    cut = AA(gl_att_tree[-1], trans, k, m)
+    cut = AA(ATT_TREES[-1], trans, k, m)
     if __DEBUG:
         print "Cut generated"
         print cut
@@ -168,7 +171,7 @@ def gen_cluster(cluster, k=25, m=2):
 def middle(record1, record2):
     """Compute relational generalization result of record1 and record2"""
     middle = []
-    for i in range(len(gl_att_tree) - 1):
+    for i in range(len(ATT_TREES) - 1):
         middle.append(get_LCA(i, record1[i], record2[i]))
     return middle
 
@@ -184,10 +187,11 @@ def middle_for_cluster(records):
     elif len_r == 1:
         return records[0]
     elif len_r == 2:
-        return  middle(records[0], records[1])
+        return middle(records[0], records[1])
     else:
         midpoint = len_r / 2
-        return  middle(middle_for_cluster(records[:midpoint]), middle_for_cluster(records[midpoint:]))
+        return middle(middle_for_cluster(records[:midpoint]),
+                      middle_for_cluster(records[midpoint:]))
 
 
 def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
@@ -314,7 +318,7 @@ def find_merge_cluster_T(index, clusters):
     min_mid = []
     for i, t in enumerate(clusters):
         records = []
-        if len(t.member) == 0 or i == index:
+        if len(t) == 0 or i == index:
             continue
         records.extend(t.member)
         records.extend(source.member)
@@ -326,23 +330,23 @@ def find_merge_cluster_T(index, clusters):
             min_index = i
             min_mid = middle_for_cluster(records)
     # compute Rum distacne for best cluster
-    min_distance = NCP(min_mid) * (len(clusters[min_index].member) + \
-                    len(clusters[index].member))
+    min_distance = NCP(min_mid) * (len(clusters[min_index]) +
+                                   len(clusters[index]))
     return (min_index, min_distance, min_mid)
 
 
 def CLUSTER(att_trees, data, k=25):
     """Group record according to QID distance. KNN"""
-    global gl_att_tree, gl_databack
-    # copy att_trees and data to gl_att_tree and gl_databack
-    gl_att_tree = att_trees
-    gl_databack = data[:]
+    global ATT_TREES, DATA_BACKUP
+    # copy att_trees and data to ATT_TREES and DATA_BACKUP
+    ATT_TREES = att_trees
+    DATA_BACKUP = data[:]
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
     while len(data) >= k:
         index = randrange(len(data))
-        cluster =  find_best_KNN(index, k, data)
+        cluster = find_best_KNN(index, k, data)
         clusters.append(cluster)
     # residual assignment
     while len(data) > 0:
@@ -353,14 +357,14 @@ def CLUSTER(att_trees, data, k=25):
 
 
 def Rum(mid):
-    """Return relational information loss. 
+    """Return relational information loss.
     Based on NCP (Normalized Certainty Penalty)
     """
     return NCP(mid)
 
 
 def Tum(mid):
-    """Return transaction information loss. 
+    """Return transaction information loss.
     Based on UL (Utility Loss)
     """
     return UL(mid)
@@ -368,8 +372,8 @@ def Tum(mid):
 
 def RMERGE_R(clusters):
     """Select the cluster c with minimum Rum(c) as a seed.
-    Find c' with most similar realtional values to c and 
-    constructs a temporary dataset Dtemp that reflects the 
+    Find c' with most similar realtional values to c and
+    constructs a temporary dataset Dtemp that reflects the
     mergeing of c and c'. If Dtemp does not violate the Rum
     threshold, it is assinged to result.
     """
@@ -377,7 +381,7 @@ def RMERGE_R(clusters):
     Rum_list = []
     ncp_list = []
     ncp_value = 0.0
-    len_data = len(gl_databack)
+    len_data = len(DATA_BACKUP)
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
@@ -388,7 +392,7 @@ def RMERGE_R(clusters):
         r = t_tuple[1]
         mid = t_tuple[2]
         pdb.set_trace()
-        if r <= gl_threshold and c != index:
+        if r <= THESHOLD and c != index:
             clusters[index].merge_group(clusters[c], mid)
             del Rum_list[0]
             temp = [index, r]
@@ -400,18 +404,18 @@ def RMERGE_R(clusters):
 
 def RMERGE_T(clusters):
     """Select the cluster c with minimum Rum(c) as a seed.
-    Find c' that contain similar transacation iterms to c and 
+    Find c' that contain similar transacation iterms to c and
     constructs a temporary dataset Dtemp by mergeing with c.
-    If Dtemp does not violate the Rum threshold, it is 
+    If Dtemp does not violate the Rum threshold, it is
     assinged to result.
     """
     print "Begin RMERGE_T"
     ncp_list = []
     ncp_value = 0.0
     Rum_list = []
-    len_data = len(gl_databack)
+    len_data = len(DATA_BACKUP)
     for i, t in enumerate(clusters):
-        ncp = (len(t.member) * NCP(t.middle) * 1.0) / len_data
+        ncp = (len(t) * NCP(t.middle) * 1.0) / len_data
         ncp_list.append(ncp)
         ncp_value += ncp
         temp = [i, ncp]
@@ -422,7 +426,7 @@ def RMERGE_T(clusters):
         index = t_tuple[0]
         new_ncp = t_tuple[1] * 1.0 / len_data
         mid = t_tuple[2]
-        if ncp_value <= gl_threshold:
+        if ncp_value <= THESHOLD:
             ncp_value += new_ncp
             ncp_value -= ncp_list[index]
             ncp_value -= ncp_list[c]
@@ -436,7 +440,7 @@ def RMERGE_T(clusters):
 
 def RMERGE_RT():
     """Select the cluster c with minimum Rum(c) as a seed.
-    Find the c' that is as close as possible to c, based on 
+    Find the c' that is as close as possible to c, based on
     (u+v) (u and v are the indices of c' in Rum and Tum list)
     """
     print "Begin RMERGE_RT"
@@ -453,7 +457,7 @@ def RMERGE_RT():
         members = []
         members.extend(clusters[index].member)
         members.extend(clusters[c].member)
-        if Rum(members, middle) <= gl_threshold:
+        if Rum(members, middle) <= THESHOLD:
             clusters[index].merge(clusters[c], middle)
             temp = [index, Rum(clusters[index])]
             update_to_sorted(Rum_list, temp)
