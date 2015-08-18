@@ -6,7 +6,7 @@ run RT_ANON with given parameters
 #coding=utf-8
 
 from utils.read_data import readdata, readtree
-from RT_ANON import CLUSTER, RMERGE_R, RMERGE_T, gen_cluster
+from RT_ANON import rt_anon
 from utils.evaluation import average_relative_error
 # from utils.save_result import save_to_file
 import sys
@@ -28,20 +28,14 @@ if __name__ == '__main__':
     #     print t.middle
     # print "Finish RT-Anon based on RMERGE_R\n"
 
-    clusters = CLUSTER(att_trees, data[:10000], 25)
-    clusters = RMERGE_T(clusters)
-    result = []
-
-    for c in clusters:
-        temp = gen_cluster(c)
-        result.extend(temp)
+    result = rt_anon(att_trees, data[:10000], 25)
     if _DEBUG:
         print result
     # save_to_file(result)
-    print "Begin Evaluation"
-    are = average_relative_error(att_trees, data, result)
-    print "Average Realtive Error: %.2f" % are
-    print "Finish RT-Anon based on RMERGE_T\n"
+    # print "Begin Evaluation"
+    # are = average_relative_error(att_trees, data, result)
+    # print "Average Realtive Error: %.2f" % are
+    # print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"
 
     '''

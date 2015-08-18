@@ -2,15 +2,15 @@
 #coding=utf-8
 
 # Read data and read tree fuctions for INFORMS data
-# user att ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
-# condition att ['DUID','DUPERSID','ICD9CODX','year']
+# user att ['DUID', 'PID', 'DUPERSID', 'DOBMM', 'DOBYY', 'SEX', 'RACEX', 'RACEAX', 'RACEBX', 'RACEWX', 'RACETHNX', 'HISPANX', 'HISPCAT', 'EDUCYEAR', 'Year', 'marry', 'income', 'poverty']
+# condition att ['DUID', 'DUPERSID', 'ICD9CODX', 'year']
 from models.gentree import GenTree
 
 __DEBUG = False
-gl_useratt = ['DUID','PID','DUPERSID','DOBMM','DOBYY','SEX','RACEX','RACEAX','RACEBX','RACEWX','RACETHNX','HISPANX','HISPCAT','EDUCYEAR','Year','marry','income','poverty']
-gl_conditionatt = ['DUID','DUPERSID','ICD9CODX','year']
+gl_useratt = ['DUID', 'PID', 'DUPERSID', 'DOBMM', 'DOBYY', 'SEX', 'RACEX', 'RACEAX', 'RACEBX', 'RACEWX', 'RACETHNX', 'HISPANX', 'HISPCAT', 'EDUCYEAR', 'Year', 'marry', 'income', 'poverty']
+gl_conditionatt = ['DUID', 'DUPERSID', 'ICD9CODX', 'year']
 # Only 5 relational attributes and 1 transaction attribute are selected (according to Poulis's paper)
-gl_attlist = [3,4,6,13,16]
+gl_attlist = [3, 4, 6, 13, 16]
 
 
 def readtree(flag=0):
@@ -28,7 +28,7 @@ def readtree(flag=0):
         att_trees.append(read_tree_file(t))
     return att_trees
 
-  
+
 def read_tree_file(treename):
     """read tree data from treename"""
     leaf_to_path = {}

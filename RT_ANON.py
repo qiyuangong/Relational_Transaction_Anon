@@ -2,6 +2,7 @@
 #coding=utf-8
 
 import pdb
+import copy
 from models.cluster import Cluster
 from models.gentree import GenTree
 from Apriori_based_Anon import AA, DA, trans_gen
@@ -15,8 +16,7 @@ THESHOLD = 0.65
 ATT_TREES = []
 # databack store all reacord for dataset
 DATA_BACKUP = []
-
-# Poulis set k=25, m=2 as default!
+LEN_DATA = 0
 
 
 def r_distance(source, target):
@@ -51,6 +51,7 @@ def NCP(mid):
     """Compute NCP (Normalized Certainty Penalty)
     when generate record to middle.
     """
+    # TODO
     ncp = 0.0
     # exclude SA values(last one type [])
     for i in range(len(mid) - 1):
@@ -104,24 +105,6 @@ def tran_cmp(node1, node2):
         return cmp(node1, node2)
 
 
-def get_MaxBTD(trans):
-    """Get BTD from cluster.
-    Poulis define BTD of a cluster as the max BTD of all possbile
-    combination of (r1,r2) in cluster.
-    """
-    len_tran = len(trans)
-    if len_tran < 2:
-        print "Error: len(trans) < 2"
-        return 0
-    elif len_tran == 2:
-        return get_BTD(trans[0], trans[1])
-    result_BTD = []
-    for i in range(len_tran):
-        for j in range(i + 1, len_tran):
-            result_BTD.append(get_BTD(trans[i], trans[j]))
-    return max(result_BTD)
-
-
 def get_BTD(tran1, tran2):
     """Poulis suggested to use BTD (Bit-vector Transaction Distance)
     to compute distance between transactions rather than Tum. As Tum
@@ -140,6 +123,24 @@ def get_BTD(tran1, tran2):
         else:
             xorcount += 1
     return (xorcount * 1.0 / andcount)
+
+
+def get_MaxBTD(trans):
+    """Get BTD from cluster.
+    Poulis define BTD of a cluster as the max BTD of all possbile
+    combination of (r1,r2) in cluster.
+    """
+    len_tran = len(trans)
+    if len_tran < 2:
+        print "Error: len(trans) < 2"
+        return 0
+    elif len_tran == 2:
+        return get_BTD(trans[0], trans[1])
+    result_BTD = []
+    for i in range(len_tran):
+        for j in range(i + 1, len_tran):
+            result_BTD.append(get_BTD(trans[i], trans[j]))
+    return max(result_BTD)
 
 
 def T_Gen(trans, k=25, m=2):
@@ -335,12 +336,9 @@ def find_merge_cluster_T(index, clusters):
     return (min_index, min_distance, min_mid)
 
 
-def CLUSTER(att_trees, data, k=25):
+def cluster_algorithm(att_trees, data, k=25):
     """Group record according to QID distance. KNN"""
-    global ATT_TREES, DATA_BACKUP
     # copy att_trees and data to ATT_TREES and DATA_BACKUP
-    ATT_TREES = att_trees
-    DATA_BACKUP = data[:]
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
@@ -381,7 +379,6 @@ def RMERGE_R(clusters):
     Rum_list = []
     ncp_list = []
     ncp_value = 0.0
-    len_data = len(DATA_BACKUP)
     for i, t in enumerate(clusters):
         temp = [i, Rum(t.middle)]
         insert_to_sorted(Rum_list, temp)
@@ -413,9 +410,8 @@ def RMERGE_T(clusters):
     ncp_list = []
     ncp_value = 0.0
     Rum_list = []
-    len_data = len(DATA_BACKUP)
-    for i, t in enumerate(clusters):
-        ncp = (len(t) * NCP(t.middle) * 1.0) / len_data
+    for i, cluster in enumerate(clusters):
+        ncp = (len(cluster) * NCP(cluster.middle) * 1.0) / LEN_DATA
         ncp_list.append(ncp)
         ncp_value += ncp
         temp = [i, ncp]
@@ -424,7 +420,7 @@ def RMERGE_T(clusters):
         c = Rum_list[0][0]
         t_tuple = find_merge_cluster_T(c, clusters)
         index = t_tuple[0]
-        new_ncp = t_tuple[1] * 1.0 / len_data
+        new_ncp = t_tuple[1] * 1.0 / LEN_DATA
         mid = t_tuple[2]
         if ncp_value <= THESHOLD:
             ncp_value += new_ncp
@@ -438,7 +434,7 @@ def RMERGE_T(clusters):
     return clusters
 
 
-def RMERGE_RT():
+def RMERGE_RT(clusters):
     """Select the cluster c with minimum Rum(c) as a seed.
     Find the c' that is as close as possible to c, based on
     (u+v) (u and v are the indices of c' in Rum and Tum list)
@@ -481,3 +477,43 @@ def TMERGE_T():
 
 def TMERGE_RT():
     return
+
+
+def init(att_trees, data):
+    """
+    init global variables
+    """
+    global ATT_TREES, DATA_BACKUP, LEN_DATA
+    ATT_TREES = att_trees
+    DATA_BACKUP = copy.deepcopy(data)
+    LEN_DATA = len(data)
+
+
+def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
+    """
+    the main function of Relational_Transaction_Anon
+    """
+    init(att_trees, data)
+    result = []
+    clusters = cluster_algorithm(att_trees, data[:10000], 25)
+    if type_alg == 'RMR':
+        merged_clusters = RMERGE_R(clusters)
+    elif type_alg == 'RMT':
+        merged_clusters = RMERGE_T(clusters)
+    elif type_alg == 'RMRT':
+        merged_clusters = RMERGE_RT(clusters)
+    elif type_alg == 'TMERGE_R':
+        merged_clusters = TMERGE_R(clusters)
+    elif type_alg == 'TMERGE_T':
+        merged_clusters = TMERGE_T(clusters)
+    elif type_alg == 'TMERGE_RT':
+        merged_clusters = TMERGE_RT(clusters)
+    else:
+        print "Please choose merge algorithm types"
+        print "RMR | RMT | RMRT | TMR | TMT | TMRT"
+        return
+    for c in clusters:
+        temp = gen_cluster(c)
+        result.extend(temp)
+    print "Finish RT-Anon based on", type_alg
+    return result

@@ -1,3 +1,6 @@
+"""
+class for generalization hierarchy
+"""
 #!/usr/bin/env python
 #coding=utf-8
 
@@ -6,7 +9,8 @@
 
 class GenTree(object):
 
-    """Class for Generalization hierarchies (Taxonomy Tree).
+    """
+    Class for Generalization hierarchies (Taxonomy Tree).
     Store tree node in instances.
     self.value: node value
     self.level: tree level (top is 0)

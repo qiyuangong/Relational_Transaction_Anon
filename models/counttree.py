@@ -1,13 +1,17 @@
 """
-class for generalization hierarchy
+class for count tree
 """
+
 #!/usr/bin/env python
 #coding=utf-8
 
 # count tree
+
+
 class CountTree(object):
 
-    """Class for Count Tree Used in AA and DA. 
+    """
+    Class for Count Tree Used in AA and DA.
     Store tree node in instances.
     self.value: node value
     self.level: tree level (root is 0)
