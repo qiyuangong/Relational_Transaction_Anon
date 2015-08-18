@@ -2,24 +2,25 @@
 run RT_ANON with given parameters
 """
 
-#!/usr/bin/env python
-#coding=utf-8
+# !/usr/bin/env python
+# coding=utf-8
 
-from utils.read_data import readdata, readtree
+from utils.read_data import read_data, read_tree
 from RT_ANON import rt_anon
 from utils.evaluation import average_relative_error
 # from utils.save_result import save_to_file
 import sys
 import socket
+import pdb
 
 
 _DEBUG = False
 
 if __name__ == '__main__':
     # read gentree tax
-    att_trees = readtree()
+    att_trees = read_tree()
     # read record
-    data = readdata()
+    data = read_data()
     # pdb.set_trace()
     # clusters = CLUSTER(att_tree, data[:200], 25)
     # clusters = RMERGE_R(clusters)
@@ -28,7 +29,8 @@ if __name__ == '__main__':
     #     print t.middle
     # print "Finish RT-Anon based on RMERGE_R\n"
 
-    result = rt_anon(att_trees, data[:10000], 25)
+    result = rt_anon(att_trees, data)
+    pdb.set_trace()
     if _DEBUG:
         print result
     # save_to_file(result)

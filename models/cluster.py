@@ -21,6 +21,12 @@ class Cluster(object):
         self.member = member
         self.middle = middle[:]
 
+    def add_record(self, record):
+        """
+        add record to cluster
+        """
+        self.member.append(record)
+
     def merge_group(self, group, middle):
         """merge group into self_gourp and delete group elements.
         update self.middle with middle

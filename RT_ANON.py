@@ -6,7 +6,8 @@ import copy
 from models.cluster import Cluster
 from models.gentree import GenTree
 from Apriori_based_Anon import AA, DA, trans_gen
-from random import randrange
+import random
+import operator
 # from pylab import *
 
 
@@ -170,7 +171,9 @@ def gen_cluster(cluster, k=25, m=2):
 
 
 def middle(record1, record2):
-    """Compute relational generalization result of record1 and record2"""
+    """
+    Compute relational generalization result of record1 and record2
+    """
     middle = []
     for i in range(len(ATT_TREES) - 1):
         middle.append(get_LCA(i, record1[i], record2[i]))
@@ -178,21 +181,92 @@ def middle(record1, record2):
 
 
 def middle_for_cluster(records):
-    """calculat middle of records(list) recursively.
+    """
+    calculat middle of records(list) recursively.
     Compute both relational middle for records (list).
     """
     len_r = len(records)
-    if len_r <= 0:
-        print "Error: empty list!"
-        return []
-    elif len_r == 1:
-        return records[0]
-    elif len_r == 2:
-        return middle(records[0], records[1])
-    else:
-        midpoint = len_r / 2
-        return middle(middle_for_cluster(records[:midpoint]),
-                      middle_for_cluster(records[midpoint:]))
+    mid = records[0]
+    for i in range(1, len_r):
+        mid = middle(mid, records[i])
+    return mid
+
+
+def find_best_knn(index, k, data):
+    """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
+    dist_dict = {}
+    record = data[index]
+    max_distance = 1000000000000
+    # add random seed to cluster
+    for i, t in enumerate(data):
+        if i == index:
+            continue
+        dist = r_distance(record, t)
+        dist_dict[i] = dist
+    sorted_dict = sorted(dist_dict.iteritems(), key=operator.itemgetter(1))
+    knn = sorted_dict[:k - 1]
+    knn.append((index, 0))
+    record_index = [t[0] for t in knn]
+    elements = [data[t[0]] for t in knn]
+    cluster = Cluster(elements, middle_for_cluster(elements))
+    # delete multiple elements from data according to knn index list
+    return cluster, record_index
+
+
+def find_best_cluster(record, clusters):
+    """residual assignment. Find best cluster for record."""
+    min_distance = 1000000000000
+    min_index = 0
+    best_cluster = clusters[0]
+    for i, t in enumerate(clusters):
+        distance = r_distance(record, t.middle)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            best_cluster = t
+    # add record to best cluster
+    return min_index
+
+
+def find_merge_cluster(index, clusters, func):
+    """mergeing step. Find best cluster for record."""
+    min_distance = 1000000000000
+    source = clusters[index]
+    min_index = 0
+    min_mid = []
+    for i, t in enumerate(clusters):
+        mid = middle(source.middle, t.middle)
+        distance = func(mid)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            min_mid = mid[:]
+    return (min_index, min_distance, min_mid)
+
+
+def find_merge_cluster_T(index, clusters):
+    """mergeing step. Find best cluster for record."""
+    min_distance = 1000000000000
+    source = clusters[index]
+    min_index = 0
+    min_mid = []
+    for i, t in enumerate(clusters):
+        records = []
+        if len(t) == 0 or i == index:
+            continue
+        records.extend(t.member)
+        records.extend(source.member)
+        # get trans from records
+        trans = [t[-1] for t in records]
+        distance = get_MaxBTD(trans)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            min_mid = middle_for_cluster(records)
+    # compute Rum distacne for best cluster
+    min_distance = NCP(min_mid) * (len(clusters[min_index]) +
+                                   len(clusters[index]))
+    return (min_index, min_distance, min_mid)
 
 
 def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
@@ -256,101 +330,23 @@ def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
     return sorted_tuple[-1][1]
 
 
-def find_best_KNN(index, k, data):
-    """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
-    elements = []
-    knn = []
-    record = data[index]
-    max_distance = 1000000000000
-    # add random seed to cluster
-    insert_to_sorted(knn, [index, 0], k)
-    for i, t in enumerate(data):
-        if i == index:
-            continue
-        dis = r_distance(record, t)
-        if dis < max_distance:
-            temp = [i, dis]
-            max_distance = insert_to_sorted(knn, temp, k)
-    for t in knn:
-        elements.append(data[t[0]])
-    c = Cluster(elements, middle_for_cluster(elements))
-    # delete multiple elements from data according to knn index list
-    cluster_index = [t[0] for t in knn]
-    data[:] = [t for i, t in enumerate(data) if i not in cluster_index]
-    return c
-
-
-def find_best_cluster(record, clusters):
-    """residual assignment. Find best cluster for record."""
-    min_distance = 1000000000000
-    min_index = 0
-    best_cluster = clusters[0]
-    for i, t in enumerate(clusters):
-        distance = r_distance(record, t.middle)
-        if distance < min_distance:
-            min_distance = distance
-            min_index = i
-            best_cluster = t
-    # add record to best cluster
-    return min_index
-
-
-def find_merge_cluster(index, clusters, func):
-    """mergeing step. Find best cluster for record."""
-    min_distance = 1000000000000
-    source = clusters[index]
-    min_index = 0
-    min_mid = []
-    for i, t in enumerate(clusters):
-        mid = middle(source.middle, t.middle)
-        distance = func(mid)
-        if distance < min_distance:
-            min_distance = distance
-            min_index = i
-            min_mid = mid[:]
-    return (min_index, min_distance, min_mid)
-
-
-def find_merge_cluster_T(index, clusters):
-    """mergeing step. Find best cluster for record."""
-    min_distance = 1000000000000
-    source = clusters[index]
-    min_index = 0
-    min_mid = []
-    for i, t in enumerate(clusters):
-        records = []
-        if len(t) == 0 or i == index:
-            continue
-        records.extend(t.member)
-        records.extend(source.member)
-        # get trans from records
-        trans = [t[-1] for t in records]
-        distance = get_MaxBTD(trans)
-        if distance < min_distance:
-            min_distance = distance
-            min_index = i
-            min_mid = middle_for_cluster(records)
-    # compute Rum distacne for best cluster
-    min_distance = NCP(min_mid) * (len(clusters[min_index]) +
-                                   len(clusters[index]))
-    return (min_index, min_distance, min_mid)
-
-
-def cluster_algorithm(att_trees, data, k=25):
-    """Group record according to QID distance. KNN"""
-    # copy att_trees and data to ATT_TREES and DATA_BACKUP
+def cluster_algorithm(data, k=25):
+    """
+    Group record according to QID distance. KNN
+    """
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     print "Begin to Cluster based on NCP"
     while len(data) >= k:
-        index = randrange(len(data))
-        cluster = find_best_KNN(index, k, data)
+        index = random.randrange(len(data))
+        cluster, record_index = find_best_knn(index, k, data)
+        data = [t for i, t in enumerate(data[:]) if i not in set(record_index)]
         clusters.append(cluster)
     # residual assignment
     while len(data) > 0:
         t = data.pop()
         cluster_index = find_best_cluster(t, clusters)
-        clusters[cluster_index].member.append(t)
+        clusters[cluster_index].add_record(t)
     return clusters
 
 
@@ -388,7 +384,6 @@ def RMERGE_R(clusters):
         index = t_tuple[0]
         r = t_tuple[1]
         mid = t_tuple[2]
-        pdb.set_trace()
         if r <= THESHOLD and c != index:
             clusters[index].merge_group(clusters[c], mid)
             del Rum_list[0]
@@ -443,7 +438,6 @@ def RMERGE_RT(clusters):
     Rum_list = []
     Tum_list = []
     sum_list = []
-
     while len(Rum_list) > 0:
         c = Rum_list[-1][0]
         # find c' according sum(u+v)
@@ -495,7 +489,7 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
     """
     init(att_trees, data)
     result = []
-    clusters = cluster_algorithm(att_trees, data[:10000], 25)
+    clusters = cluster_algorithm(data, 25)
     if type_alg == 'RMR':
         merged_clusters = RMERGE_R(clusters)
     elif type_alg == 'RMT':

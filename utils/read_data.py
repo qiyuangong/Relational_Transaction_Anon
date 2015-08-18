@@ -13,7 +13,7 @@ gl_conditionatt = ['DUID', 'DUPERSID', 'ICD9CODX', 'year']
 gl_attlist = [3, 4, 6, 13, 16]
 
 
-def readtree(flag=0):
+def read_tree(flag=0):
     """read tree from data/tree_*.txt, return them in att_trees"""
     att_names = []
     att_trees = []
@@ -35,12 +35,12 @@ def read_tree_file(treename):
     att_tree = {}
     prefix = 'data/treefile_'
     postfix = ".txt"
-    treefile = open(prefix + treename + postfix,'rU')
+    treefile = open(prefix + treename + postfix, 'rU')
     att_tree['*'] = GenTree('*')
     if __DEBUG:
         print "Reading Tree" + treename
     for line in treefile:
-        #delete \n
+        # delete \n
         if len(line) <= 1:
             break
         line = line.strip()
@@ -49,18 +49,19 @@ def read_tree_file(treename):
         temp.reverse()
         for i, t in enumerate(temp):
             isleaf = False
-            if i == len(temp):
+            if i == len(temp) - 1:
                 isleaf = True
-            if not t in att_tree:
-                # always satisfy 
-                att_tree[t] = GenTree(t, att_tree[temp[i - 1]])
+            try:
+                att_tree[t]
+            except:
                 att_tree[t] = GenTree(t, att_tree[temp[i - 1]], isleaf)
     if __DEBUG:
         print "Nodes No. = %d" % att_tree['*'].support
     treefile.close()
     return att_tree
 
-def readdata():
+
+def read_data():
     """read microda for *.txt and return read data"""
     data = []
     userfile = open('data/demographics05test.csv', 'rU')

@@ -38,6 +38,8 @@ class GenTree(object):
                 if isleaf:
                     t.cover[self.value] = self
                     t.support += 1
+            if isleaf:
+                self.cover[self.value] = self
 
     def node(self, value):
         """Search tree with value, return GenTree node.
@@ -47,3 +49,9 @@ class GenTree(object):
             return self.cover[value]
         except:
             return None
+
+    def __len__(self):
+        """
+        return number of leaf nodes in covered by this node
+        """
+        return self.support
