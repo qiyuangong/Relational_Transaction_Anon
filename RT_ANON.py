@@ -3,6 +3,7 @@
 
 import pdb
 import copy
+import heapq
 from models.cluster import Cluster
 from models.gentree import GenTree
 from Apriori_based_Anon import AA, DA, trans_gen
@@ -228,20 +229,27 @@ def find_best_cluster(record, clusters):
     return min_index
 
 
-def find_merge_cluster(index, clusters, func):
-    """mergeing step. Find best cluster for record."""
+def find_merge_cluster(source, Rum_list, func):
+    """
+    mergeing step. Find best cluster for index cluster.
+    """
     min_distance = 1000000000000
-    source = clusters[index]
-    min_index = 0
+    min_index = None
     min_mid = []
-    for i, t in enumerate(clusters):
-        mid = middle(source.middle, t.middle)
-        distance = func(mid)
+    len_source = len(source)
+    for i, temp in enumerate(Rum_list):
+        len_cluster, cluster = temp
+        mid = middle(source.middle, cluster.middle)
+        distance = func(mid, len_cluster + len_source)
         if distance < min_distance:
             min_distance = distance
             min_index = i
             min_mid = mid[:]
-    return (min_index, min_distance, min_mid)
+    if min_distance == 1000000000000:
+        print "Cannot find the nearest cluster"
+        pdb.set_trace()
+    _, min_cluster = Rum_list.pop(min_index)
+    return (min_distance, min_cluster, min_mid)
 
 
 def find_merge_cluster_T(index, clusters):
@@ -269,67 +277,6 @@ def find_merge_cluster_T(index, clusters):
     return (min_index, min_distance, min_mid)
 
 
-def insert_to_sorted(sorted_tuple, temp, tail=10000000000000):
-    """insert element(index,distance) pair to sorted_tuple(list)"""
-    # insert sort
-    i = 0
-    for i in range(len(sorted_tuple)):
-        if sorted_tuple[i][1] > temp[1]:
-            break
-    else:
-        i += 1
-    sorted_tuple.insert(i, temp)
-    # if sorted_tuple > tail, del last element
-    if len(sorted_tuple) > tail:
-        del sorted_tuple[-1]
-    # return largest
-    return sorted_tuple[-1][1]
-
-
-def del_index_sorted(sorted_tuple, index):
-    """delete element(index,distance) pair from sorted_tuple(list)
-    according to index
-    """
-    # insert sort
-    i = 0
-    for i in range(len(sorted_tuple)):
-        if sorted_tuple[i][0] == index:
-            break
-    else:
-        print "Error: Can not find index!"
-        return
-    del sorted_tuple[i]
-
-
-def update_to_sorted(sorted_tuple, temp, tail=10000000000000):
-    """update element(index,distance) pair to sorted_tuple(list)"""
-    # remove old pair
-    i = 0
-    for i in range(len(sorted_tuple)):
-        if sorted_tuple[i][0] == temp[0]:
-            break
-    else:
-        # pair has already been removed
-        pdb.set_trace()
-        print "Error: pair have been removed"
-        return
-    if i < len(sorted_tuple):
-        del sorted_tuple[i]
-    # insert new pair
-    i = 0
-    for i in range(len(sorted_tuple)):
-        if sorted_tuple[i][1] > temp[1]:
-            break
-    else:
-        i += 1
-    sorted_tuple.insert(i, temp)
-    # if sorted_tuple > tail, del last element
-    if len(sorted_tuple) > tail:
-        del sorted_tuple[-1]
-    # return largest
-    return sorted_tuple[-1][1]
-
-
 def cluster_algorithm(data, k=25):
     """
     Group record according to QID distance. KNN
@@ -350,18 +297,18 @@ def cluster_algorithm(data, k=25):
     return clusters
 
 
-def Rum(mid):
+def Rum(mid, size):
     """Return relational information loss.
     Based on NCP (Normalized Certainty Penalty)
     """
-    return NCP(mid)
+    return NCP(mid) * size * 1.0
 
 
-def Tum(mid):
+def Tum(cluster):
     """Return transaction information loss.
     Based on UL (Utility Loss)
     """
-    return UL(mid)
+    return UL(cluster.middle)
 
 
 def RMERGE_R(clusters):
@@ -375,23 +322,21 @@ def RMERGE_R(clusters):
     Rum_list = []
     ncp_list = []
     ncp_value = 0.0
-    for i, t in enumerate(clusters):
-        temp = [i, Rum(t.middle)]
-        insert_to_sorted(Rum_list, temp)
+    for i, cluster in enumerate(clusters):
+        heapq.heappush(Rum_list, (Rum(cluster.middle, len(cluster)), cluster))
     while len(Rum_list) > 1:
-        c = Rum_list[0][0]
-        t_tuple = find_merge_cluster(c, clusters, Rum)
-        index = t_tuple[0]
-        r = t_tuple[1]
-        mid = t_tuple[2]
-        if r <= THESHOLD and c != index:
-            clusters[index].merge_group(clusters[c], mid)
-            del Rum_list[0]
-            temp = [index, r]
-            update_to_sorted(Rum_list, temp)
+        _, current_cluster = heapq.heappop()
+        min_rum, best_cluster, mid = find_merge_cluster(current_cluster, Rum_list, Rum)
+        total_ncp = 0.0
+        for temp in Rum_list:
+            total_ncp += temp[0]
+        total_ncp += min_rum
+        if total_ncp <= THESHOLD:
+            best_cluster.merge_group(current_cluster, mid)
+            heapq.heappush(Rum_list, (min_rum, best_cluster))
         else:
             break
-    return clusters
+    return [t[1] for t in Rum_list]
 
 
 def RMERGE_T(clusters):
@@ -406,7 +351,7 @@ def RMERGE_T(clusters):
     ncp_value = 0.0
     Rum_list = []
     for i, cluster in enumerate(clusters):
-        ncp = (len(cluster) * NCP(cluster.middle) * 1.0) / LEN_DATA
+        ncp = (len(cluster) * NCP(cluster.middle) * 1.0)
         ncp_list.append(ncp)
         ncp_value += ncp
         temp = [i, ncp]
