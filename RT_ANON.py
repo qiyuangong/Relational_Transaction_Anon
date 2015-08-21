@@ -6,8 +6,9 @@ import copy
 import heapq
 from models.cluster import Cluster
 from models.gentree import GenTree
-from Apriori_based_Anon import AA, DA, trans_gen
+from apriori_based_anon import apriori_based_anon
 import random
+import time
 import operator
 # from pylab import *
 
@@ -19,6 +20,7 @@ ATT_TREES = []
 # databack store all reacord for dataset
 DATA_BACKUP = []
 LEN_DATA = 0
+QI_LEN = 0
 
 
 def r_distance(source, target):
@@ -148,11 +150,9 @@ def get_MaxBTD(trans):
 def T_Gen(trans, k=25, m=2):
     """transaction generalization based on AA
     """
-    cut = AA(ATT_TREES[-1], trans, k, m)
-    if __DEBUG:
-        print "Cut generated"
-        print cut
-    return trans_gen(trans[:], cut)
+    # using AA to generalization transaction part
+    result, eval_result = apriori_based_anon(ATT_TREES[-1], trans, 'AA', k, m)
+    return result, eval_result[0]
 
 
 def gen_cluster(cluster, k=25, m=2):
@@ -162,13 +162,14 @@ def gen_cluster(cluster, k=25, m=2):
     gen_result = []
     member = cluster.member
     trans = [t[-1] for t in member]
-    gen_trans = T_Gen(trans, k, m)
+    rncp = len(cluster) * NCP(cluster.middle)
+    gen_trans, tncp = T_Gen(trans, k, m)
     for i in range(len(member)):
         # relational generalization
         temp = cluster.middle[:]
         temp.append(gen_trans[i])
         gen_result.append(temp)
-    return gen_result
+    return gen_result, rncp, tncp
 
 
 def middle(record1, record2):
@@ -325,7 +326,7 @@ def RMERGE_R(clusters):
     for i, cluster in enumerate(clusters):
         heapq.heappush(Rum_list, (Rum(cluster.middle, len(cluster)), cluster))
     while len(Rum_list) > 1:
-        _, current_cluster = heapq.heappop()
+        _, current_cluster = heapq.heappop(Rum_list)
         min_rum, best_cluster, mid = find_merge_cluster(current_cluster, Rum_list, Rum)
         total_ncp = 0.0
         for temp in Rum_list:
@@ -434,6 +435,7 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
     """
     init(att_trees, data)
     result = []
+    start_time = time.time()
     clusters = cluster_algorithm(data, 25)
     if type_alg == 'RMR':
         merged_clusters = RMERGE_R(clusters)
@@ -451,8 +453,16 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
         print "Please choose merge algorithm types"
         print "RMR | RMT | RMRT | TMR | TMT | TMRT"
         return
+    rtime = float(time.time() - start_time)
+    total_rncp = 0.0
+    total_tncp = 0.0
     for c in clusters:
-        temp = gen_cluster(c)
+        temp, rncp, tncp = gen_cluster(c)
+        total_rncp += rncp
+        total_tncp += tncp
         result.extend(temp)
+    total_rncp = total_rncp * 1.0 / len(clusters)
+    print "RNCP", total_rncp
+    print "TNCP", total_tncp
     print "Finish RT-Anon based on", type_alg
-    return result
+    return result, (total_rncp, total_tncp, rtime)
