@@ -152,7 +152,7 @@ def T_Gen(trans, k=25, m=2):
     """
     # using AA to generalization transaction part
     result, eval_result = apriori_based_anon(ATT_TREES[-1], trans, 'AA', k, m)
-    return result, eval_result[0]
+    return result, eval_result
 
 
 def gen_cluster(cluster, k=25, m=2):
@@ -163,13 +163,13 @@ def gen_cluster(cluster, k=25, m=2):
     member = cluster.member
     trans = [t[-1] for t in member]
     rncp = len(cluster) * NCP(cluster.middle)
-    gen_trans, tncp = T_Gen(trans, k, m)
+    gen_trans, eval_result = T_Gen(trans, k, m)
     for i in range(len(member)):
         # relational generalization
         temp = cluster.middle[:]
         temp.append(gen_trans[i])
         gen_result.append(temp)
-    return gen_result, rncp, tncp
+    return gen_result, rncp, eval_result
 
 
 def middle(record1, record2):
@@ -423,9 +423,10 @@ def init(att_trees, data):
     """
     init global variables
     """
-    global ATT_TREES, DATA_BACKUP, LEN_DATA
+    global ATT_TREES, DATA_BACKUP, LEN_DATA, QI_LEN
     ATT_TREES = att_trees
     DATA_BACKUP = copy.deepcopy(data)
+    QI_LEN = len(data[0]) - 1
     LEN_DATA = len(data)
 
 
@@ -456,12 +457,18 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
     rtime = float(time.time() - start_time)
     total_rncp = 0.0
     total_tncp = 0.0
+    item_num = 0
     for c in clusters:
-        temp, rncp, tncp = gen_cluster(c)
+        temp, rncp, eval_result = gen_cluster(c)
         total_rncp += rncp
-        total_tncp += tncp
+        total_tncp += eval_result[0]
+        item_num += eval_result[1]
         result.extend(temp)
-    total_rncp = total_rncp * 1.0 / len(clusters)
+    total_rncp = total_rncp * 1.0 / LEN_DATA
+    total_rncp = total_rncp / (len(data[0]) - 1)
+    total_tncp = total_tncp * 1.0 / item_num
+    total_tncp *= 100
+    total_rncp *= 100
     print "RNCP", total_rncp
     print "TNCP", total_tncp
     print "Finish RT-Anon based on", type_alg

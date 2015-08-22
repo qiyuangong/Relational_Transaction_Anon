@@ -8,7 +8,6 @@ main module of Apriori based Anon
 # Poulis set k=25, m=2 as default!
 
 import pdb
-import time
 from models.gentree import GenTree
 from models.counttree import CountTree
 from random import randrange
@@ -305,12 +304,10 @@ def apriori_based_anon(att_tree, trans, type_alg='AA', k=25, m=2):
     """
     """
     init(att_tree, trans)
-    start_time = time.time()
     if type_alg == 'DA':
         cut = DA(trans, k, m)
     else:
         cut = AA(trans, k, m)
-    rtime = float(time.time() - start_time)
     result = []
     ncp = 0.0
     for tran in trans:
@@ -326,9 +323,9 @@ def apriori_based_anon(att_tree, trans, type_alg='AA', k=25, m=2):
                     gen_tran.append(item)
         result.append(list(set(gen_tran)))
         ncp += rncp
-    ncp /= ELEMENT_NUM
-    ncp *= 100
+    # ncp /= ELEMENT_NUM
+    # ncp *= 100
     # if __DEBUG:
-    print "Final Cut"
-    print cut
-    return (result, (ncp, rtime))
+    # print "Final Cut"
+    # print cut
+    return (result, (ncp, ELEMENT_NUM))
