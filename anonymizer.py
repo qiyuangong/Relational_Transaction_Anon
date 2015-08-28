@@ -12,30 +12,31 @@ from utils.evaluation import average_relative_error
 import sys
 import socket
 import pdb
+import cProfile
 
 
 _DEBUG = False
 
 if __name__ == '__main__':
     # read gentree tax
-    att_trees = read_tree()
+    ATT_TREES = read_tree()
     # read record
-    data = read_data()
+    DATA = read_data()
     # pdb.set_trace()
-    # clusters = CLUSTER(att_tree, data[:200], 25)
+    # clusters = CLUSTER(att_tree, DATA[:200], 25)
     # clusters = RMERGE_R(clusters)
     # for i, t in enumerate(clusters):
     #     print "cluster %d" % i
     #     print t.middle
     # print "Finish RT-Anon based on RMERGE_R\n"
-
-    result = rt_anon(att_trees, data)
-    pdb.set_trace()
+    # DATA = DATA[:2000]
+    result = cProfile.run('rt_anon(ATT_TREES, DATA)')
+    # pdb.set_trace()
     if _DEBUG:
         print result
     # save_to_file(result)
     # print "Begin Evaluation"
-    # are = average_relative_error(att_trees, data, result)
+    # are = average_relative_error(ATT_TREES, DATA, result)
     # print "Average Realtive Error: %.2f" % are
     # print "Finish RT-Anon based on RMERGE_T\n"
     print "Finish RT-Anonymization!!"
