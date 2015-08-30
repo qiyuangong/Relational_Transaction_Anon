@@ -469,7 +469,8 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
     total_tncp = total_tncp * 1.0 / item_num
     total_tncp *= 100
     total_rncp *= 100
-    print "RNCP", total_rncp
-    print "TNCP", total_tncp
+    if __DEBUG:
+        print "RNCP", total_rncp
+        print "TNCP", total_tncp
     print "Finish RT-Anon based on", type_alg
     return result, (total_rncp, total_tncp, rtime)

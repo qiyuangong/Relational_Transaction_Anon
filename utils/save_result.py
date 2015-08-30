@@ -4,24 +4,34 @@
 # store
 
 import socket
+import pickle
 from datetime import datetime
-from utils.ftp_upload import ftp_upload
 
-def save_to_file(result):
+
+def save_to_file(result, number=-1, flag=0):
+    """save results to files
+    if flag=0, then pickle (att_trees, data, result, K, M)) to file
+    else, save result to file
+    """
     print "Saving result...."
     hostname = socket.gethostname()
-    file_tail = datetime.now().strftime('%Y-%m-%d-%H') + '.txt'
+    if number == -1:
+        file_tail = "Size%dK%dM%d" % (len(result[1]), result[3], result[4])
+    else:
+        file_tail = "Size%dK%dM%dN%d" % (len(result[1]), result[3], result[4], number)
+    file_tail = file_tail + '.txt'
     file_path = 'output/'
-    file_name = hostname + '-result' + file_tail
-    file_result = open(file_path + file_name,'w')
-    for record in result:
-        line = ';'.join(record[:-1]) + ';'
-        tran = ';'.join(record[-1]) + '\n'
-        file_result.write(line+tran)
+    file_name = hostname + '-' + file_tail
+    if flag:
+        # write file in text
+        # only restore result
+        file_result = open(file_path + file_name, 'w')
+        for record in result[2]:
+            line = ';'.join(record) + '\n'
+            file_result.write(line)
+    else:
+        # write file using pickle
+        file_result = open(file_path + file_name, 'wb')
+        pickle.dump(result, file_result)
     file_result.close()
-    try:
-        # ftp_upload(file_name, file_path)
-        pass
-    except:
-        print "Upload Fail!"
     print "Save Complete!"
