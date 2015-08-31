@@ -199,13 +199,7 @@ def get_cut_dict(cut):
         for cover_value in cover_list:
             if cover_value == item:
                 continue
-            try:
-                cut_dict[cover_value]
-                # watch dog to check if check_overlap works
-                print "ERROR: Overlap cut!"
-                pdb.set_trace()
-            except KeyError:
-                cut_dict[cover_value] = item
+            cut_dict[cover_value] = item
     return cut_dict
 
 

@@ -305,11 +305,11 @@ def Rum(mid, size):
     return NCP(mid) * size * 1.0
 
 
-def Tum(cluster):
+def Tum(mid, size):
     """Return transaction information loss.
     Based on UL (Utility Loss)
     """
-    return UL(cluster.middle)
+    return UL(mid) * size * 1.0
 
 
 def RMERGE_R(clusters):
@@ -348,31 +348,24 @@ def RMERGE_T(clusters):
     assinged to result.
     """
     print "Begin RMERGE_T"
+    Tum_list = []
     ncp_list = []
     ncp_value = 0.0
-    Rum_list = []
     for i, cluster in enumerate(clusters):
-        ncp = (len(cluster) * NCP(cluster.middle) * 1.0)
-        ncp_list.append(ncp)
-        ncp_value += ncp
-        temp = [i, ncp]
-        insert_to_sorted(Rum_list, temp)
-    while len(Rum_list) > 1:
-        c = Rum_list[0][0]
-        t_tuple = find_merge_cluster_T(c, clusters)
-        index = t_tuple[0]
-        new_ncp = t_tuple[1] * 1.0 / LEN_DATA
-        mid = t_tuple[2]
-        if ncp_value <= THESHOLD:
-            ncp_value += new_ncp
-            ncp_value -= ncp_list[index]
-            ncp_value -= ncp_list[c]
-            clusters[index].merge_group(clusters[c], mid)
-            ncp_list[index] = new_ncp
-            temp = [index, new_ncp]
-            update_to_sorted(Rum_list, temp)
-        del Rum_list[0]
-    return clusters
+        heapq.heappush(Tum_list, (Tum(cluster.middle, len(cluster)), cluster))
+    while len(Tum_list) > 1:
+        _, current_cluster = heapq.heappop(Tum_list)
+        min_rum, best_cluster, mid = find_merge_cluster(current_cluster, Tum_list, Tum)
+        total_ncp = 0.0
+        for temp in Tum_list:
+            total_ncp += temp[0]
+        total_ncp += min_rum
+        if total_ncp <= THESHOLD:
+            best_cluster.merge_group(current_cluster, mid)
+            heapq.heappush(Tum_list, (min_rum, best_cluster))
+        else:
+            break
+    return [t[1] for t in Tum_list]
 
 
 def RMERGE_RT(clusters):

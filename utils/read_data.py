@@ -53,7 +53,7 @@ def read_tree_file(treename):
                 isleaf = True
             try:
                 att_tree[t]
-            except:
+            except KeyError:
                 att_tree[t] = GenTree(t, att_tree[temp[i - 1]], isleaf)
     if __DEBUG:
         print "Nodes No. = %d" % att_tree['*'].support
@@ -64,8 +64,8 @@ def read_tree_file(treename):
 def read_data():
     """read microda for *.txt and return read data"""
     data = []
-    userfile = open('data/demographics05test.csv', 'rU')
-    conditionfile = open('data/conditions05.csv', 'rU')
+    userfile = open('data/demographics.csv', 'rU')
+    conditionfile = open('data/conditions.csv', 'rU')
     userdata = {}
     # We selet 3,4,5,6,13,15,15 att from demographics05, and 2 from condition05
     print "Reading Data..."
@@ -89,9 +89,9 @@ def read_data():
         row = line.split(',')
         row[1] = row[1][1:-1]
         row[2] = row[2][1:-1]
-        if row[1] in conditiondata:
+        try:
             conditiondata[row[1]].append(row)
-        else:
+        except KeyError:
             conditiondata[row[1]] = [row]
     hashdata = {}
     for k, v in userdata.iteritems():

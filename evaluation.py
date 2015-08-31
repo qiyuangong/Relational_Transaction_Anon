@@ -71,7 +71,7 @@ def est_query(gen_data, att_select, value_select):
     # pdb.set_trace()
     for record in gen_data:
         est_value = 0.0
-        for i in range(lenquery-1):
+        for i in range(lenquery - 1):
             # check qid part
             index = att_select[i]
             value = value_select[i]
@@ -115,7 +115,7 @@ def average_relative_error(att_trees, data, gen_data, qd=2, s=5):
         except:
             SA_set[str_temp] = temp[-1]
     att_cover[-1] = SA_set.keys()
-    seed = math.pow(s*1.0/100, 1.0/(qd +1))
+    seed = math.pow(s * 1.0 / 100, 1.0 / (qd + 1))
     # transform generalized result to coverage
     tran_result = copy.deepcopy(gen_data)
     # compute b
@@ -161,13 +161,15 @@ def evaluate_one(file_list, qd=2, s=5):
     """run are for one time
     """
     for t in file_list:
-        if '58568K10L5.txt' in t:
+        if '58568K10M2.txt' in t:
             file_name = t
             break
+        else:
+            return
     file_result = open('output/' + file_name, 'rb')
-    (att_trees, data, result, K, L) = pickle.load(file_result)
+    (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
-    print "K=%d, L=%d" % (K, L)
+    print "K=%d, m=%d" % (K, m)
     are = average_relative_error(att_trees, data, result, qd, s)
     print "Average Relative Error: %.2f%%" % (are * 100)
 
@@ -176,55 +178,60 @@ def evaluate_s(file_list, qd=2):
     """evaluate s, while fixing qd
     """
     for t in file_list:
-        if '58568K10L5.txt' in t:
+        if '58568K10M2.txt' in t:
             file_name = t
             break
-    file_result = open('output/'+file_name,'rb')
-    (att_trees, data, result, K, L) = pickle.load(file_result)
+        else:
+            return
+    file_result = open('output/' + file_name, 'rb')
+    (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
-    print "K=%d, L=%d" % (K, L)
+    print "K=%d, m=%d" % (K, m)
     for s in range(1, 10):
-        print '-'*30
+        print '-' * 30
         are = average_relative_error(att_trees, data, result, qd, s)
-        print "Average Relative Error: %.2f%%" % (are*100)
+        print "Average Relative Error: %.2f%%" % (are * 100)
 
 
 def evaluate_qd(file_list, s=5):
     """evaluate qd, while fixing s
     """
     for t in file_list:
-        if '58568K10L5.txt' in t:
+        if '58568K10M2.txt' in t:
             file_name = t
             break
-    file_result = open('output/'+file_name,'rb')
-    (att_trees, data, result, K, L) = pickle.load(file_result)
+        else:
+            return
+    file_result = open('output/' + file_name, 'rb')
+    (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
-    print "K=%d, L=%d" % (K, L)
+    print "K=%d, m=%d" % (K, m)
     for qd in range(1, 6):
-        print '-'*30
+        print '-' * 30
         are = average_relative_error(att_trees, data, result, qd, s)
-        print "Average Relative Error: %.2f%%" % (are*100)
+        print "Average Relative Error: %.2f%%" % (are * 100)
 
 
 def evaluate_dataset(file_list, qd=2, s=5):
-    """evaluate dataset, while fixing qd, s, k, l
+    """evaluate dataset, while fixing qd, s, k, m
     """
-    file_list = [t for t in file_list if 'K10L5.txt' in t]
+    file_list = [t for t in file_list if 'K10M2.txt' in t]
     for file_name in file_list:
         file_result = open('output/' + file_name, 'rb')
-        (att_trees, data, result, K, L) = pickle.load(file_result)
+        (att_trees, data, result, K, m) = pickle.load(file_result)
         file_result.close()
         print '-' * 30
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
 
-def evaluate_K(file_list, qd=2, s=5):
-    """evaluate K, while fixing L, qd, s
+
+def evaluate_k(file_list, qd=2, s=5):
+    """evaluate K, while fixing m, qd, s
     """
     str_list = []
     # we only compute K=5*n <= 50
     for i in range(5, 55, 5):
-        temp = '58568K' + str(i) + 'L5.txt'
+        temp = '58568K' + str(i) + 'M2.txt'
         str_list.append(temp)
     check_list = []
     for filename in file_list:
@@ -233,22 +240,22 @@ def evaluate_K(file_list, qd=2, s=5):
                 check_list.append(filename)
                 break
     for file_name in check_list:
-        file_result = open('output/'+file_name,'rb')
-        (att_trees, data, result, K, L) = pickle.load(file_result)
+        file_result = open('output/' + file_name, 'rb')
+        (att_trees, data, result, K, m) = pickle.load(file_result)
         file_result.close()
-        print '-'*30
-        print "K=%d, L=%d" % (K, L)
+        print '-' * 30
+        print "K=%d, m=%d" % (K, m)
         are = average_relative_error(att_trees, data, result, qd, s)
-        print "Average Relative Error: %.2f%%" % (are*100)
+        print "Average Relative Error: %.2f%%" % (are * 100)
 
 
-def evaluate_L(file_list, qd=2, s=5):
-    """evaluate L, while fixing K, qd, s
+def evaluate_m(file_list, qd=2, s=5):
+    """evaluate m, while fixing K, qd, s
     """
     str_list = []
     # we only compute K=5*n <= 50
-    for i in range(5, 55, 5):
-        temp = '58568K10L' + str(i) + '.txt'
+    for i in range(1, 6):
+        temp = '58568K10M' + str(i) + '.txt'
         str_list.append(temp)
     check_list = []
     for filename in file_list:
@@ -257,13 +264,13 @@ def evaluate_L(file_list, qd=2, s=5):
                 check_list.append(filename)
                 break
     for file_name in check_list:
-        file_result = open('output/'+file_name,'rb')
-        (att_trees, data, result, K, L) = pickle.load(file_result)
+        file_result = open('output/' + file_name, 'rb')
+        (att_trees, data, result, K, m) = pickle.load(file_result)
         file_result.close()
-        print '-'*30
-        print "K=%d, L=%d" % (K, L)
+        print '-' * 30
+        print "K=%d, m=%d" % (K, m)
         are = average_relative_error(att_trees, data, result, qd, s)
-        print "Average Relative Error: %.2f%%" % (are*100)
+        print "Average Relative Error: %.2f%%" % (are * 100)
 
 
 if __name__ == '__main__':
@@ -290,12 +297,10 @@ if __name__ == '__main__':
     elif flag == 'data':
         evaluate_dataset(file_list)
     elif flag == 'k':
-        evaluate_K(file_list)
-    elif flag == 'l':
-        evaluate_L(file_list)
+        evaluate_k(file_list)
     elif flag == 'm':
         evaluate_m(file_list)
     elif flag == '':
         evaluate_one(file_list)
     else:
-        print "Usage: python evaluation [qd | s | one | data | k | l |m]"
+        print "Usage: python evaluation [qd | s | one | data | k |m]"
