@@ -13,29 +13,74 @@ from utils.utility import list_to_str
 _DEBUG = False
 
 
-# def gen_to_cover(att_tree, tran):
-#     """Transform generlized transaction value to coverage (list)
-#     """
-#     temp = []
-#     # store the probability of each value
-#     prob = {}
-#     for t in tran:
-#         if att_tree[t].support:
-#             support = att_tree[t].support
-#             temp.extend(att_tree[t].cover.keys()[:])
-#             for k in att_tree[t].cover.keys():
-#                 try:
-#                     prob[k] += 1.0 / support
-#                 except:
-#                     prob[k] = 1.0 / support
-#         else:
-#             temp.append(t)
-#             try:
-#                 prob[t] += 1
-#             except:
-#                 prob[t] = 1
-#     temp = list(set(temp))
-#     return (temp, prob)
+def get_tran_range(att_tree, tran):
+    cover_dict = dict()
+    cover = set()
+    for item in tran:
+        prob = 0
+        leaf_num = att_tree[item].support
+        if leaf_num > 0:
+            prob += leaf_num
+            cover += set(att_tree[item].leaf.keys())
+        else:
+            prob += 1
+            cover.add(item)
+    prob = 1.0 / prob
+    for item in cover:
+        cover_dict[item] = prob
+    return cover_dict
+
+
+def get_qi_range(att_trees, record, qi_len):
+    prob = 1.0
+    cover_set = []
+    for i in range(qi_len):
+        qi_value = record[i]
+        cover = set()
+        cover_dict = dict()
+        node = att_trees[i][qi_value]
+        if node.support > 0:
+            prob /= node.support
+            cover = set(att_tree[item].keys())
+        else:
+            cover.add(qi_value)
+        cover_set.append(cover)
+    return (cover_set, prob)
+
+
+def get_result_cover(att_trees, result):
+    qi_len = len(result[0]) - 1
+    for record in result:
+        cover_set = []
+        qi_result = get_qi_range(att_trees[])
+        cover_set.extend(qi_result[0])
+        tran_result = get_tran_range(att_trees[-1], record[-1])
+        cover_set.append(tran_result[0])
+
+
+def gen_to_cover(att_tree, result):
+    """Transform generlized transaction value to coverage (list)
+    """
+    temp = []
+    # store the probability of each value
+    prob = {}
+    for t in tran:
+        if att_tree[t].support:
+            support = att_tree[t].support
+            temp.extend(att_tree[t].cover.keys()[:])
+            for k in att_tree[t].cover.keys():
+                try:
+                    prob[k] += 1.0 / support
+                except:
+                    prob[k] = 1.0 / support
+        else:
+            temp.append(t)
+            try:
+                prob[t] += 1
+            except:
+                prob[t] = 1
+    temp = list(set(temp))
+    return (temp, prob)
 
 
 def count_query(data, att_select, value_select):
@@ -75,9 +120,10 @@ def est_query(gen_data, att_select, value_select):
             # check qid part
             index = att_select[i]
             value = value_select[i]
-            qi_value = record[index]
-            if qi_value in set(value):
-                continue
+            qi_set = record[index]
+            for temp in value:
+                if qi_value in qi_set:
+                    break
             else:
                 break
         else:
@@ -94,13 +140,14 @@ def est_query(gen_data, att_select, value_select):
     return count
 
 
-def average_relative_error(att_trees, data, gen_data, qd=2, s=5):
+def average_relative_error(att_trees, data, result, qd=2, s=5):
     """return average relative error of anonmized microdata,
     qd denote the query dimensionality, b denot seleciton of query
     """
     print "qd=%d s=%d" % (qd, s)
     print "size of dataset %d" % len(data)
-    print "size of dataset %d" % len(gen_data)
+    print "size of dataset %d" % len(result)
+    gen_data = gen_data(att_trees, result)
     are = 0.0
     len_att = len(att_trees)
     blist = []
@@ -164,8 +211,8 @@ def evaluate_one(file_list, qd=2, s=5):
         if '58568K10M2.txt' in t:
             file_name = t
             break
-        else:
-            return
+    else:
+        return
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
@@ -181,8 +228,8 @@ def evaluate_s(file_list, qd=2):
         if '58568K10M2.txt' in t:
             file_name = t
             break
-        else:
-            return
+    else:
+        return
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
@@ -200,8 +247,8 @@ def evaluate_qd(file_list, s=5):
         if '58568K10M2.txt' in t:
             file_name = t
             break
-        else:
-            return
+    else:
+        return
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
@@ -215,14 +262,24 @@ def evaluate_qd(file_list, s=5):
 def evaluate_dataset(file_list, qd=2, s=5):
     """evaluate dataset, while fixing qd, s, k, m
     """
-    file_list = [t for t in file_list if 'K10M2.txt' in t]
-    for file_name in file_list:
-        file_result = open('output/' + file_name, 'rb')
-        (att_trees, data, result, K, m) = pickle.load(file_result)
-        file_result.close()
+    file_list = [t for t in file_list if 'K10M2N' in t]
+    joint = 5000
+    dataset_num = 58568 / joint
+    if 58568 % joint == 0:
+        dataset_num += 1
+    for i in range(1, dataset_num + 1):
         print '-' * 30
-        are = average_relative_error(att_trees, data, result, qd, s)
-        print "Average Relative Error: %.2f%%" % (are * 100)
+        pos = i * joint
+        key_words = 'Size' + str(pos) + 'K10M2N'
+        case_file = [t for t in file_list if key_words in t]
+        are = 0.0
+        for file_name in file_list:
+            file_result = open('output/' + file_name, 'rb')
+            (att_trees, data, result, K, m) = pickle.load(file_result)
+            file_result.close()
+            pre_are = average_relative_error(att_trees, data, result, qd, s)
+            are += pre_are
+        print "Average Relative Error for %d: %.2f%%" % (pos, are * 10)
 
 
 def evaluate_k(file_list, qd=2, s=5):

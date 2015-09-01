@@ -20,6 +20,7 @@ ATT_TREES = []
 # databack store all reacord for dataset
 DATA_BACKUP = []
 LEN_DATA = 0
+LEAF_NUM = 0
 QI_LEN = 0
 
 
@@ -60,9 +61,9 @@ def NCP(mid):
     # exclude SA values(last one type [])
     for i in range(len(mid) - 1):
         # if support of numerator is 1, then NCP is 0
-        if ATT_TREES[i][mid[i]].support == 0:
+        if len(ATT_TREES[i][mid[i]]) == 0:
             continue
-        ncp += ATT_TREES[i][mid[i]].support * 1.0 / ATT_TREES[i]['*'].support
+        ncp += len(ATT_TREES[i][mid[i]]) * 1.0 / len(ATT_TREES[i]['*'])
     return ncp
 
 
@@ -72,7 +73,7 @@ def UL(mid):
     ul = 0
     supp_sum = 0
     for t in mid[-1]:
-        supp = ATT_TREES[-1][t].support
+        supp = len(ATT_TREES[-1][t])
         supp_sum += supp
         ul += (2 ** supp)
     ul = ul / (2 ** supp_sum) * 1.0
@@ -101,8 +102,8 @@ def get_LCA(index, item1, item2):
 
 def tran_cmp(node1, node2):
     """Compare node1 (str) and node2 (str)"""
-    support1 = ATT_TREES[-1][node1].support
-    support2 = ATT_TREES[-1][node2].support
+    support1 = len(ATT_TREES[-1][node1])
+    support2 = len(ATT_TREES[-1][node2])
     if support1 != support2:
         return cmp(support1, support2)
     else:

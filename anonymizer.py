@@ -11,6 +11,7 @@ import sys
 import copy
 import random
 import cProfile
+import pdb
 
 
 TYPE_ALG = 'RMR'
@@ -94,7 +95,7 @@ def get_result_dataset(att_tree, data, type_alg='RMR', k=DEFALUT_K, num_test=10)
         for j in range(num_test):
             temp = random.sample(data, pos)
             result, eval_result = rt_anon(att_tree, temp, type_alg, k)
-            save_to_file((att_tree, temp, result, k, DEFALUT_M), nubmber=j)
+            save_to_file((att_tree, temp, result, k, DEFALUT_M), number=j)
             rncp += eval_result[0]
             tncp += eval_result[1]
             rtime += eval_result[2]
@@ -121,11 +122,11 @@ if __name__ == '__main__':
     print "*" * 30
     ATT_TREES = read_tree()
     # read record
-    DATA = read_data()
+    # DATA = read_data()
     # read generalization hierarchy
     # read record
     # remove duplicate items
-    DATA = DATA[:4000]
+    # DATA = DATA[:4000]
     # for i in range(len(DATA)):
     #     if len(DATA[i]) <= 40:
     #         DATA[i] = list(set(DATA[i]))
