@@ -10,7 +10,6 @@ from apriori_based_anon import apriori_based_anon
 import random
 import time
 import operator
-# from pylab import *
 
 
 __DEBUG = False
@@ -59,7 +58,7 @@ def NCP(mid):
     # TODO
     ncp = 0.0
     # exclude SA values(last one type [])
-    for i in range(len(mid) - 1):
+    for i in range(QI_LEN):
         # if support of numerator is 1, then NCP is 0
         if len(ATT_TREES[i][mid[i]]) == 0:
             continue
@@ -67,14 +66,16 @@ def NCP(mid):
     return ncp
 
 
-def UL(mid):
+def UL(tran):
     """Compute UL (Utility Loss) for record and middle.
     """
     ul = 0
-    supp_sum = 0
+    supp_sum = len(ATT_TREES[-1]['*'])
     for t in mid[-1]:
-        supp = len(ATT_TREES[-1][t])
-        supp_sum += supp
+        try:
+            supp = len(ATT_TREES[-1][t])
+        except:
+            pdb.set_trace()
         ul += (2 ** supp)
     ul = ul / (2 ** supp_sum) * 1.0
     return ul
@@ -178,7 +179,7 @@ def middle(record1, record2):
     Compute relational generalization result of record1 and record2
     """
     middle = []
-    for i in range(len(ATT_TREES) - 1):
+    for i in range(QI_LEN):
         middle.append(get_LCA(i, record1[i], record2[i]))
     return middle
 
@@ -254,29 +255,25 @@ def find_merge_cluster(source, Rum_list, func):
     return (min_distance, min_cluster, min_mid)
 
 
-def find_merge_cluster_T(index, clusters):
+def find_merge_cluster_T(source, Rum_list):
     """mergeing step. Find best cluster for record."""
     min_distance = 1000000000000
-    source = clusters[index]
-    min_index = 0
-    min_mid = []
-    for i, t in enumerate(clusters):
-        records = []
-        if len(t) == 0 or i == index:
-            continue
-        records.extend(t.member)
-        records.extend(source.member)
-        # get trans from records
-        trans = [t[-1] for t in records]
-        distance = get_MaxBTD(trans)
+    min_index = None
+    source_tran = [t[-1] for t in source.member]
+    len_source = len(source)
+    for i, temp in enumerate(Rum_list):
+        _, cluster = temp
+        target_tran = [t[-1] for t in cluster.member]
+        trans = source_tran + target_tran
+        distance = Tum(trans)
         if distance < min_distance:
             min_distance = distance
             min_index = i
-            min_mid = middle_for_cluster(records)
-    # compute Rum distacne for best cluster
-    min_distance = NCP(min_mid) * (len(clusters[min_index]) +
-                                   len(clusters[index]))
-    return (min_index, min_distance, min_mid)
+    if min_distance == 1000000000000:
+        print "Cannot find the nearest cluster"
+        pdb.set_trace()
+    _, min_cluster = Rum_list.pop(min_index)
+    return (min_distance, min_cluster, _)
 
 
 def cluster_algorithm(data, k=25):
@@ -306,11 +303,11 @@ def Rum(mid, size):
     return NCP(mid) * size * 1.0
 
 
-def Tum(mid, size):
+def Tum(trans):
     """Return transaction information loss.
     Based on UL (Utility Loss)
     """
-    return UL(mid) * size * 1.0
+    return get_MaxBTD(trans)
 
 
 def RMERGE_R(clusters):
@@ -333,6 +330,8 @@ def RMERGE_R(clusters):
         for temp in Rum_list:
             total_ncp += temp[0]
         total_ncp += min_rum
+        total_ncp = total_ncp * 1.0 / LEN_DATA
+        total_ncp /= QI_LEN
         if total_ncp <= THESHOLD:
             best_cluster.merge_group(current_cluster, mid)
             heapq.heappush(Rum_list, (min_rum, best_cluster))
@@ -349,24 +348,28 @@ def RMERGE_T(clusters):
     assinged to result.
     """
     print "Begin RMERGE_T"
-    Tum_list = []
+    Rum_list = []
     ncp_list = []
     ncp_value = 0.0
     for i, cluster in enumerate(clusters):
-        heapq.heappush(Tum_list, (Tum(cluster.middle, len(cluster)), cluster))
-    while len(Tum_list) > 1:
-        _, current_cluster = heapq.heappop(Tum_list)
-        min_rum, best_cluster, mid = find_merge_cluster(current_cluster, Tum_list, Tum)
+        heapq.heappush(Rum_list, (Rum(cluster.middle, len(cluster)), cluster))
+    while len(Rum_list) > 1:
+        _, current_cluster = heapq.heappop(Rum_list)
+        _, best_cluster, _ = find_merge_cluster_T(current_cluster, Rum_list)
         total_ncp = 0.0
-        for temp in Tum_list:
+        mid = middle(current_cluster.middle, best_cluster.middle)
+        min_rum = Rum(mid, len(current_cluster) + len(best_cluster))
+        for temp in Rum_list:
             total_ncp += temp[0]
         total_ncp += min_rum
+        total_ncp = total_ncp * 1.0 / LEN_DATA
+        total_ncp /= QI_LEN
         if total_ncp <= THESHOLD:
             best_cluster.merge_group(current_cluster, mid)
-            heapq.heappush(Tum_list, (min_rum, best_cluster))
+            heapq.heappush(Rum_list, (min_rum, best_cluster))
         else:
             break
-    return [t[1] for t in Tum_list]
+    return [t[1] for t in Rum_list]
 
 
 def RMERGE_RT(clusters):
@@ -438,11 +441,11 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
         merged_clusters = RMERGE_T(clusters)
     elif type_alg == 'RMRT':
         merged_clusters = RMERGE_RT(clusters)
-    elif type_alg == 'TMERGE_R':
+    elif type_alg == 'TMR':
         merged_clusters = TMERGE_R(clusters)
-    elif type_alg == 'TMERGE_T':
+    elif type_alg == 'TMT':
         merged_clusters = TMERGE_T(clusters)
-    elif type_alg == 'TMERGE_RT':
+    elif type_alg == 'TMRT':
         merged_clusters = TMERGE_RT(clusters)
     else:
         print "Please choose merge algorithm types"
@@ -459,7 +462,7 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
         item_num += eval_result[1]
         result.extend(temp)
     total_rncp = total_rncp * 1.0 / LEN_DATA
-    total_rncp = total_rncp / (len(data[0]) - 1)
+    total_rncp = total_rncp / QI_LEN
     total_tncp = total_tncp * 1.0 / item_num
     total_tncp *= 100
     total_rncp *= 100

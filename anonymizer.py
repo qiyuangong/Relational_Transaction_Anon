@@ -17,7 +17,7 @@ import pdb
 TYPE_ALG = 'RMR'
 DEFALUT_M = 2
 M_MAX = 161
-DEFALUT_K = 10
+DEFALUT_K = 25
 
 
 def get_result_one(att_tree, data, type_alg, k=DEFALUT_K):
@@ -28,7 +28,7 @@ def get_result_one(att_tree, data, type_alg, k=DEFALUT_K):
     print "Size of Data", len(data)
     print "m=%d" % DEFALUT_M
     result, eval_result = rt_anon(att_tree, data, type_alg, k)
-    save_to_file((att_tree, data, result, k, DEFALUT_M))
+    # save_to_file((att_tree, data, result, k, DEFALUT_M))
     print "RNCP %0.2f" % eval_result[0] + "%"
     print "TNCP %0.2f" % eval_result[1] + "%"
     print "Running time %0.2f" % eval_result[2] + " seconds"
@@ -122,11 +122,11 @@ if __name__ == '__main__':
     print "*" * 30
     ATT_TREES = read_tree()
     # read record
-    # DATA = read_data()
+    DATA = read_data()
     # read generalization hierarchy
     # read record
     # remove duplicate items
-    # DATA = DATA[:4000]
+    # DATA = DATA[:6000]
     # for i in range(len(DATA)):
     #     if len(DATA[i]) <= 40:
     #         DATA[i] = list(set(DATA[i]))
