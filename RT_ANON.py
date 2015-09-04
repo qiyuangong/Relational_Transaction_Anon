@@ -241,9 +241,9 @@ def find_merge_cluster(source, Rum_list, func):
     min_mid = []
     len_source = len(source)
     for i, temp in enumerate(Rum_list):
-        len_cluster, cluster = temp
+        _, cluster = temp
         mid = middle(source.middle, cluster.middle)
-        distance = func(mid, len_cluster + len_source)
+        distance = func(mid, len(cluster) + len_source)
         if distance < min_distance:
             min_distance = distance
             min_index = i
@@ -416,25 +416,26 @@ def TMERGE_RT():
     return
 
 
-def init(att_trees, data):
+def init(att_trees, data, threshold):
     """
     init global variables
     """
-    global ATT_TREES, DATA_BACKUP, LEN_DATA, QI_LEN
+    global ATT_TREES, DATA_BACKUP, LEN_DATA, QI_LEN, THESHOLD
     ATT_TREES = att_trees
     DATA_BACKUP = copy.deepcopy(data)
+    THESHOLD = threshold
     QI_LEN = len(data[0]) - 1
     LEN_DATA = len(data)
 
 
-def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
+def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2, threshold=0.65):
     """
     the main function of Relational_Transaction_Anon
     """
-    init(att_trees, data)
+    init(att_trees, data, threshold)
     result = []
     start_time = time.time()
-    clusters = cluster_algorithm(data, 25)
+    clusters = cluster_algorithm(data, k)
     if type_alg == 'RMR':
         merged_clusters = RMERGE_R(clusters)
     elif type_alg == 'RMT':
@@ -456,7 +457,7 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2):
     total_tncp = 0.0
     item_num = 0
     for c in clusters:
-        temp, rncp, eval_result = gen_cluster(c)
+        temp, rncp, eval_result = gen_cluster(c, k, m)
         total_rncp += rncp
         total_tncp += eval_result[0]
         item_num += eval_result[1]

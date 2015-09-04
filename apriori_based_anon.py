@@ -379,4 +379,4 @@ def apriori_based_anon(att_tree, trans, type_alg='AA', k=10, m=4):
         list_cut = list(set(cut.values()))
         list_cut.sort(cmp=tran_cmp, reverse=True)
         print "Final Cut", list_cut
-    return (result, (ncp, ELEMENT_NUM))
+    return (result, (ncp, ELEMENT_NUM, cut))

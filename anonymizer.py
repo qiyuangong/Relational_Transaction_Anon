@@ -13,39 +13,42 @@ import random
 import cProfile
 import pdb
 
-
+sys.setrecursionlimit(50000)
 TYPE_ALG = 'RMR'
 DEFALUT_M = 2
 M_MAX = 161
-DEFALUT_K = 25
+DEFALUT_K = 10
+DEFALUT_T = 0.65
 
 
-def get_result_one(att_tree, data, type_alg, k=DEFALUT_K):
+def get_result_one(att_tree, data, type_alg, k=DEFALUT_K, m=DEFALUT_M, threshold=DEFALUT_T):
     """
     run RT_ANON for one time, with k=10
     """
     print "K=%d" % k
     print "Size of Data", len(data)
     print "m=%d" % DEFALUT_M
-    result, eval_result = rt_anon(att_tree, data, type_alg, k)
+    print "Threshold=%.2f" % threshold
+    result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
     # save_to_file((att_tree, data, result, k, DEFALUT_M))
     print "RNCP %0.2f" % eval_result[0] + "%"
     print "TNCP %0.2f" % eval_result[1] + "%"
     print "Running time %0.2f" % eval_result[2] + " seconds"
 
 
-def get_result_k(att_tree, data, type_alg):
+def get_result_k(att_tree, data, type_alg, threshold=DEFALUT_T):
     """
     change k, whle fixing size of dataset
     """
     data_back = copy.deepcopy(data)
     # for k in range(5, 105, 5):
     print "m=%d" % DEFALUT_M
+    print "Threshold=%.2f" % threshold
     print "Size of Data", len(data)
     for k in [2, 5, 10, 25, 50]:
         print '#' * 30
         print "K=%d" % k
-        result, eval_result = rt_anon(att_tree, data, type_alg, k)
+        result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
         save_to_file((att_tree, data, result, k, DEFALUT_M))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
@@ -53,18 +56,19 @@ def get_result_k(att_tree, data, type_alg):
         print "Running time %0.2f" % eval_result[2] + " seconds"
 
 
-def get_result_m(att_tree, data, type_alg, k=DEFALUT_K):
+def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
     """
     change k, whle fixing size of dataset
     """
     print "K=%d" % k
+    print "Threshold=%.2f" % threshold
     print "Size of Data", len(data)
     data_back = copy.deepcopy(data)
     # for m in range(1, 100, 5):
     for m in [1, 2, 3, 4, 5, M_MAX]:
         print '#' * 30
         print "m=%d" % m
-        result, eval_result = rt_anon(att_tree, data, type_alg, k, m)
+        result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
         save_to_file((att_tree, data, result, k, m))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
@@ -72,13 +76,15 @@ def get_result_m(att_tree, data, type_alg, k=DEFALUT_K):
         print "Running time %0.2f" % eval_result[2] + " seconds"
 
 
-def get_result_dataset(att_tree, data, type_alg='RMR', k=DEFALUT_K, num_test=10):
+def get_result_dataset(att_tree, data, type_alg='RMR',
+                       k=DEFALUT_K, threshold=DEFALUT_T, num_test=10):
     """
     fix k, while changing size of dataset
     num_test is the test nubmber.
     """
     print "K=%d" % k
     print "m=%d" % DEFALUT_M
+    print "Threshold=%.2f" % threshold
     data_back = copy.deepcopy(data)
     length = len(data_back)
     joint = 5000
@@ -94,7 +100,7 @@ def get_result_dataset(att_tree, data, type_alg='RMR', k=DEFALUT_K, num_test=10)
         print "size of dataset %d" % pos
         for j in range(num_test):
             temp = random.sample(data, pos)
-            result, eval_result = rt_anon(att_tree, temp, type_alg, k)
+            result, eval_result = rt_anon(att_tree, temp, type_alg, k, m, threshold)
             save_to_file((att_tree, temp, result, k, DEFALUT_M), number=j)
             rncp += eval_result[0]
             tncp += eval_result[1]
@@ -126,7 +132,7 @@ if __name__ == '__main__':
     # read generalization hierarchy
     # read record
     # remove duplicate items
-    # DATA = DATA[:6000]
+    # DATA = DATA[:1000]
     # for i in range(len(DATA)):
     #     if len(DATA[i]) <= 40:
     #         DATA[i] = list(set(DATA[i]))
@@ -142,8 +148,8 @@ if __name__ == '__main__':
     elif FLAG == 'data':
         get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
-        cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
-        # get_result_one(ATT_TREES, DATA, TYPE_ALG)
+        # cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
+        get_result_one(ATT_TREES, DATA, TYPE_ALG)
     else:
         try:
             INPUT_K = int(FLAG)
