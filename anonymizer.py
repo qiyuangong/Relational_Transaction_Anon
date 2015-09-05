@@ -36,7 +36,7 @@ def get_result_one(att_tree, data, type_alg, k=DEFALUT_K, m=DEFALUT_M, threshold
     print "Running time %0.2f" % eval_result[2] + " seconds"
 
 
-def get_result_k(att_tree, data, type_alg, threshold=DEFALUT_T):
+def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
     """
     change k, whle fixing size of dataset
     """
@@ -77,7 +77,7 @@ def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
 
 
 def get_result_dataset(att_tree, data, type_alg='RMR',
-                       k=DEFALUT_K, threshold=DEFALUT_T, num_test=10):
+                       k=DEFALUT_K, m=DEFALUT_M, threshold=DEFALUT_T, num_test=10):
     """
     fix k, while changing size of dataset
     num_test is the test nubmber.
