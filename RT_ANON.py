@@ -240,40 +240,18 @@ def find_merge_cluster(source, Rum_list, func):
     min_index = None
     min_mid = []
     len_source = len(source)
-    for i, temp in enumerate(Rum_list):
+    for index, temp in enumerate(Rum_list):
         _, cluster = temp
         mid = middle(source.middle, cluster.middle)
         distance = func(mid, len(cluster) + len_source)
         if distance < min_distance:
             min_distance = distance
-            min_index = i
+            min_index = index
             min_mid = mid[:]
     if min_distance == 1000000000000:
         print "Cannot find the nearest cluster"
         pdb.set_trace()
-    _, min_cluster = Rum_list.pop(min_index)
-    return (min_distance, min_cluster, min_mid)
-
-
-def find_merge_cluster_T(source, Rum_list):
-    """mergeing step. Find best cluster for record."""
-    min_distance = 1000000000000
-    min_index = None
-    source_tran = [t[-1] for t in source.member]
-    len_source = len(source)
-    for i, temp in enumerate(Rum_list):
-        _, cluster = temp
-        target_tran = [t[-1] for t in cluster.member]
-        trans = source_tran + target_tran
-        distance = Tum(trans)
-        if distance < min_distance:
-            min_distance = distance
-            min_index = i
-    if min_distance == 1000000000000:
-        print "Cannot find the nearest cluster"
-        pdb.set_trace()
-    _, min_cluster = Rum_list.pop(min_index)
-    return (min_distance, min_cluster, _)
+    return (min_distance, min_mid, min_index)
 
 
 def cluster_algorithm(data, k=25):
@@ -319,23 +297,26 @@ def RMERGE_R(clusters):
     """
     print "Begin RMERGE_R"
     Rum_list = []
-    ncp_list = []
-    ncp_value = 0.0
     for i, cluster in enumerate(clusters):
         heapq.heappush(Rum_list, (Rum(cluster.middle, len(cluster)), cluster))
     while len(Rum_list) > 1:
-        _, current_cluster = heapq.heappop(Rum_list)
-        min_rum, best_cluster, mid = find_merge_cluster(current_cluster, Rum_list, Rum)
+        current_rum, current_cluster = heapq.heappop(Rum_list)
+        min_rum, mid, min_index = find_merge_cluster(current_cluster, Rum_list, Rum)
         total_ncp = 0.0
-        for temp in Rum_list:
+        for index, temp in enumerate(Rum_list):
+            if index == min_index:
+                continue
             total_ncp += temp[0]
         total_ncp += min_rum
         total_ncp = total_ncp * 1.0 / LEN_DATA
         total_ncp /= QI_LEN
         if total_ncp <= THESHOLD:
+            _, best_cluster = Rum_list.pop(min_index)
             best_cluster.merge_group(current_cluster, mid)
             heapq.heappush(Rum_list, (min_rum, best_cluster))
         else:
+            # push cluster back to Rum_list
+            heapq.heappush(Rum_list, (current_rum, current_cluster))
             break
     return [t[1] for t in Rum_list]
 
@@ -349,25 +330,35 @@ def RMERGE_T(clusters):
     """
     print "Begin RMERGE_T"
     Rum_list = []
-    ncp_list = []
-    ncp_value = 0.0
     for i, cluster in enumerate(clusters):
         heapq.heappush(Rum_list, (Rum(cluster.middle, len(cluster)), cluster))
     while len(Rum_list) > 1:
-        _, current_cluster = heapq.heappop(Rum_list)
-        _, best_cluster, _ = find_merge_cluster_T(current_cluster, Rum_list)
+        current_rum, current_cluster = heapq.heappop(Rum_list)
+        current_tran = [t[-1] for t in current_cluster.member]
+        len_current_cluster = len(current_cluster)
+        Tum_list = []
         total_ncp = 0.0
-        mid = middle(current_cluster.middle, best_cluster.middle)
-        min_rum = Rum(mid, len(current_cluster) + len(best_cluster))
-        for temp in Rum_list:
+        for index, temp in enumerate(Rum_list):
             total_ncp += temp[0]
-        total_ncp += min_rum
-        total_ncp = total_ncp * 1.0 / LEN_DATA
-        total_ncp /= QI_LEN
-        if total_ncp <= THESHOLD:
-            best_cluster.merge_group(current_cluster, mid)
-            heapq.heappush(Rum_list, (min_rum, best_cluster))
+            cluster = temp[1]
+            tran = [t[-1] for t in cluster.member] + current_tran
+            heapq.heappush(Tum_list, (Tum(tran), cluster, temp[0], index))
+        for temp in Tum_list:
+            cluster = temp[1]
+            current_ncp = total_ncp - temp[2]
+            mid = middle(current_cluster.middle, cluster.middle)
+            min_rum = Rum(mid, len(cluster) + len_current_cluster)
+            current_ncp += min_rum
+            current_ncp = current_ncp * 1.0 / (LEN_DATA * QI_LEN)
+            if current_ncp <= THESHOLD:
+                # pop this cluster
+                Rum_list.pop(temp[3])
+                cluster.merge_group(current_cluster, mid)
+                heapq.heappush(Rum_list, (min_rum, cluster))
+                break
         else:
+            # push cluster back to Rum_list
+            heapq.heappush(Rum_list, (current_rum, current_cluster))
             break
     return [t[1] for t in Rum_list]
 
@@ -456,7 +447,7 @@ def rt_anon(att_trees, data, type_alg='RMR', k=25, m=2, threshold=0.65):
     total_rncp = 0.0
     total_tncp = 0.0
     item_num = 0
-    for c in clusters:
+    for c in merged_clusters:
         temp, rncp, eval_result = gen_cluster(c, k, m)
         total_rncp += rncp
         total_tncp += eval_result[0]

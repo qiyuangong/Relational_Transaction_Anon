@@ -45,7 +45,7 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
     print "m=%d" % DEFALUT_M
     print "Threshold=%.2f" % threshold
     print "Size of Data", len(data)
-    for k in [2, 5, 10, 25, 50]:
+    for k in [2, 5, 10, 25, 50, 100]:
         print '#' * 30
         print "K=%d" % k
         result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
