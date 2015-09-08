@@ -122,8 +122,10 @@ class test_Apriori_based_Anon(unittest.TestCase):
                 ['b1', ['a1', 'b1']],
                 ['b1', ['a1', 'b1']]]
         _, result = rt_anon(att_trees, data, 'RMT', 2, 2, 0.5)
-        print result
         self.assertTrue(abs(result[0] - 50) <= 0.001)
+        self.assertTrue(abs(result[1] - 0) <= 0.001)
+        _, result = rt_anon(att_trees, data, 'RMT', 2, 2, 0.7)
+        self.assertTrue(abs(result[0] - 200.0 / 3) <= 0.001)
         self.assertTrue(abs(result[1] - 0) <= 0.001)
 
 if __name__ == '__main__':

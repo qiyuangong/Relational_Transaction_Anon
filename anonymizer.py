@@ -159,7 +159,7 @@ if __name__ == '__main__':
             print "k: varying k"
             print "m: varying m"
             print "data: varying size of dataset"
-            print "example: python anonymizer rmr 10"
-            print "example: python anonymizer tmr k"
+            print "example: python anonymizer RMR 10"
+            print "example: python anonymizer RMT k"
     # anonymized dataset is stored in result
     print "Finish RT_ANON!!"
