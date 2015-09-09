@@ -11,23 +11,21 @@ import math, random, pickle, sys, copy
 from utils.utility import list_to_str
 
 _DEBUG = False
+QUERY_TIME = 1000
 
 
 def get_tran_range(att_tree, tran):
     cover_dict = dict()
-    cover = set()
     for item in tran:
-        prob = 0
-        leaf_num = att_tree[item].support
+        prob = 1.0
+        leaf_num = len(att_tree[item])
         if leaf_num > 0:
-            prob += leaf_num
-            cover += set(att_tree[item].leaf.keys())
+            cover = att_tree[item].leaf.keys()
+            prob = prob / leaf_num
+            for t in cover:
+                cover_dict[t] = prob
         else:
-            prob += 1
-            cover.add(item)
-    prob = 1.0 / prob
-    for item in cover:
-        cover_dict[item] = prob
+            cover_dict[item] = prob
     return cover_dict
 
 
@@ -36,51 +34,56 @@ def get_qi_range(att_trees, record, qi_len):
     cover_set = []
     for i in range(qi_len):
         qi_value = record[i]
-        cover = set()
         cover_dict = dict()
         node = att_trees[i][qi_value]
-        if node.support > 0:
-            prob /= node.support
-            cover = set(att_tree[item].keys())
+        prob = 1.0
+        if len(node) > 0:
+            cover = node.leaf.keys()
+            prob /= len(node)
+            for t in cover:
+                cover_dict[t] = prob
         else:
-            cover.add(qi_value)
-        cover_set.append(cover)
-    return (cover_set, prob)
+            cover_dict[qi_value] = prob
+        cover_set.append(cover_dict)
+    return cover_set
 
 
 def get_result_cover(att_trees, result):
     qi_len = len(result[0]) - 1
+    gen_result = []
     for record in result:
         cover_set = []
-        qi_result = get_qi_range(att_trees[])
-        cover_set.extend(qi_result[0])
+        qi_result = get_qi_range(att_trees, record, qi_len)
+        cover_set.extend(qi_result)
         tran_result = get_tran_range(att_trees[-1], record[-1])
-        cover_set.append(tran_result[0])
+        cover_set.append(tran_result)
+        gen_result.append(cover_set)
+    return gen_result
 
 
-def gen_to_cover(att_tree, result):
-    """Transform generlized transaction value to coverage (list)
-    """
-    temp = []
-    # store the probability of each value
-    prob = {}
-    for t in tran:
-        if att_tree[t].support:
-            support = att_tree[t].support
-            temp.extend(att_tree[t].cover.keys()[:])
-            for k in att_tree[t].cover.keys():
-                try:
-                    prob[k] += 1.0 / support
-                except:
-                    prob[k] = 1.0 / support
-        else:
-            temp.append(t)
-            try:
-                prob[t] += 1
-            except:
-                prob[t] = 1
-    temp = list(set(temp))
-    return (temp, prob)
+# def gen_to_cover(att_tree, result):
+#     """Transform generlized transaction value to coverage (list)
+#     """
+#     temp = []
+#     # store the probability of each value
+#     prob = {}
+#     for t in tran:
+#         if att_tree[t].support:
+#             support = att_tree[t].support
+#             temp.extend(att_tree[t].cover.keys()[:])
+#             for k in att_tree[t].cover.keys():
+#                 try:
+#                     prob[k] += 1.0 / support
+#                 except:
+#                     prob[k] = 1.0 / support
+#         else:
+#             temp.append(t)
+#             try:
+#                 prob[t] += 1
+#             except:
+#                 prob[t] = 1
+#     temp = list(set(temp))
+#     return (temp, prob)
 
 
 def count_query(data, att_select, value_select):
@@ -115,27 +118,28 @@ def est_query(gen_data, att_select, value_select):
     lenquery = len(att_select)
     # pdb.set_trace()
     for record in gen_data:
-        est_value = 0.0
-        for i in range(lenquery - 1):
+        est_value = 1.0
+        flag = True
+        for i in range(lenquery):
             # check qid part
+            if flag is False:
+                break
+            att_prob = 0
             index = att_select[i]
             value = value_select[i]
-            qi_set = record[index]
-            for temp in value:
-                if qi_value in qi_set:
-                    break
-            else:
-                break
-        else:
-            # check sa part
-            # this records is in query on QID
-            value = value_select[-1]
-            group_set = record[-1]
+            value_dict = record[index]
             for temp in value:
                 try:
-                    est_value += group_set[temp]
+                    att_prob += value_dict[temp]
                 except:
                     continue
+            if abs(att_prob) <= 0.001:
+                flag = False
+                break
+            else:
+                est_value = est_value * att_prob
+        if flag is False:
+            continue
         count += est_value
     return count
 
@@ -145,9 +149,9 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     qd denote the query dimensionality, b denot seleciton of query
     """
     print "qd=%d s=%d" % (qd, s)
-    print "size of dataset %d" % len(data)
-    print "size of dataset %d" % len(result)
-    gen_data = gen_data(att_trees, result)
+    print "size of raw data %d" % len(data)
+    print "size of result data %d" % len(result)
+    gen_data = get_result_cover(att_trees, result[:100])
     are = 0.0
     len_att = len(att_trees)
     blist = []
@@ -167,14 +171,13 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     tran_result = copy.deepcopy(gen_data)
     # compute b
     for i in range(len_att):
-        blist.append(int(math.ceil(att_roots[i].support * seed)))
+        blist.append(int(math.ceil(len(att_roots[i]) * seed)))
     if _DEBUG:
         print "b %s" % blist
     # query times, normally it's 1000. But query 1000 need more than 10h
     # so we limited query times to 100
-    q_times = 1000
     zeroare = 0
-    for turn in range(q_times):
+    for turn in range(QUERY_TIME):
         att_select = []
         value_select = []
         i = 0
@@ -199,9 +202,9 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
         else:
             zeroare += 1
     print "Times = %d when Query on microdata is Zero" % zeroare
-    if q_times == zeroare:
+    if QUERY_TIME == zeroare:
         return 0
-    return are / (q_times - zeroare)
+    return are / (QUERY_TIME - zeroare)
 
 
 def evaluate_one(file_list, qd=2, s=5):
