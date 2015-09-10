@@ -7,25 +7,48 @@ evaluate Average Relative Error
 from models.gentree import GenTree
 from os import walk
 import pdb
-import math, random, pickle, sys, copy
+import math
+import random
+import pickle
+import sys
+import cProfile
 from utils.utility import list_to_str
 
-_DEBUG = False
-QUERY_TIME = 1000
+_DEBUG = True
+QUERY_TIME = 10
+COVER_DICT = []
+
+
+def init_cover_dict(att_trees):
+    global COVER_DICT
+    COVER_DICT = []
+    for att_tree in att_trees:
+        cover = dict()
+        prob = 1.0 / len(att_tree['*'])
+        root_cover = dict()
+        for key, item in att_tree['*'].leaf.items():
+            root_cover[key] = prob
+        cover['*'] = root_cover
+        COVER_DICT.append(cover)
 
 
 def get_tran_range(att_tree, tran):
+    temp = list_to_str(tran)
+    try:
+        return COVER_DICT[temp]
+    except:
+        pass
     cover_dict = dict()
     for item in tran:
         prob = 1.0
         leaf_num = len(att_tree[item])
         if leaf_num > 0:
-            cover = att_tree[item].leaf.keys()
             prob = prob / leaf_num
-            for t in cover:
+            for t in att_tree[item].leaf.keys():
                 cover_dict[t] = prob
         else:
             cover_dict[item] = prob
+    COVER_DICT[-1][temp] = cover_dict
     return cover_dict
 
 
@@ -34,21 +57,27 @@ def get_qi_range(att_trees, record, qi_len):
     cover_set = []
     for i in range(qi_len):
         qi_value = record[i]
+        try:
+            cover_set.append(COVER_DICT[i][qi_value])
+            continue
+        except:
+            pass
         cover_dict = dict()
         node = att_trees[i][qi_value]
         prob = 1.0
         if len(node) > 0:
-            cover = node.leaf.keys()
             prob /= len(node)
-            for t in cover:
+            for t in node.leaf.keys():
                 cover_dict[t] = prob
         else:
             cover_dict[qi_value] = prob
+        COVER_DICT[i][qi_value] = cover_dict
         cover_set.append(cover_dict)
     return cover_set
 
 
 def get_result_cover(att_trees, result):
+    init_cover_dict(att_trees)
     qi_len = len(result[0]) - 1
     gen_result = []
     for record in result:
@@ -59,31 +88,6 @@ def get_result_cover(att_trees, result):
         cover_set.append(tran_result)
         gen_result.append(cover_set)
     return gen_result
-
-
-# def gen_to_cover(att_tree, result):
-#     """Transform generlized transaction value to coverage (list)
-#     """
-#     temp = []
-#     # store the probability of each value
-#     prob = {}
-#     for t in tran:
-#         if att_tree[t].support:
-#             support = att_tree[t].support
-#             temp.extend(att_tree[t].cover.keys()[:])
-#             for k in att_tree[t].cover.keys():
-#                 try:
-#                     prob[k] += 1.0 / support
-#                 except:
-#                     prob[k] = 1.0 / support
-#         else:
-#             temp.append(t)
-#             try:
-#                 prob[t] += 1
-#             except:
-#                 prob[t] = 1
-#     temp = list(set(temp))
-#     return (temp, prob)
 
 
 def count_query(data, att_select, value_select):
@@ -97,17 +101,90 @@ def count_query(data, att_select, value_select):
             index = att_select[i]
             value = value_select[i]
             qi_value = record[index]
-            if qi_value in value:
+            if qi_value in set(value):
                 continue
             else:
                 break
         else:
             value = value_select[-1]
             sa_set = record[-1]
-            str_temp = list_to_str(sa_set)
-            if str_temp in value:
-                count += 1
+            for temp in value:
+                for t in sa_set:
+                    if t not in set(temp):
+                        break
+                else:
+                    count += 1
+                    break
     return count
+
+
+# def check_gen_qi(att_tree, gen_value, value):
+#     att_prob = 0.0
+#     qi_gen_node = att_tree[gen_value]
+#     ls = len(qi_gen_node)
+#     if ls == 0:
+#         if gen_value in set(value):
+#             return 1.0
+#     else:
+#         for temp in value:
+#             try:
+#                 qi_gen_node.cover[temp]
+#                 att_prob += 1.0 / ls
+#             except:
+#                 continue
+#     return att_prob
+
+
+# def check_gen_tran(att_tree, sa_set, value):
+#     sa_est = 0.0
+#     for tran in value:
+#         tran_est = 1.0
+#         for t in tran:
+#             for item in sa_set:
+#                 ls = len(att_tree[item])
+#                 if ls == 0:
+#                     if t == item:
+#                         break
+#                 else:
+#                     try:
+#                         att_tree[item].cover[t]
+#                         tran_est *= 1.0 / ls
+#                         break
+#                     except:
+#                         continue
+#             else:
+#                 tran_est = 0.0
+#                 break
+#         sa_est += tran_est
+#     return sa_est
+
+
+# def est_query(att_trees, gen_data, att_select, value_select):
+#     """estimate aggregate result according to
+#     att_select and value_select, return count()
+#     """
+#     count = 0.0
+#     lenquery = len(att_select)
+#     for record in gen_data:
+#         est_value = 1.0
+#         flag = True
+#         for i in range(lenquery - 1):
+#             # check qid part
+#             if flag is False:
+#                 break
+#             index = att_select[i]
+#             att_prob = check_gen_qi(att_trees[index], record[index], value_select[i])
+#             if abs(att_prob) <= 0.001:
+#                 flag = False
+#                 break
+#             else:
+#                 est_value = est_value * att_prob
+#             if flag is False:
+#                 continue
+#         else:
+#             sa_est = check_gen_tran(att_trees[-1], record[-1], value_select[-1])
+#             count += (est_value * sa_est)
+#     return count
 
 
 def est_query(gen_data, att_select, value_select):
@@ -116,31 +193,37 @@ def est_query(gen_data, att_select, value_select):
     """
     count = 0.0
     lenquery = len(att_select)
-    # pdb.set_trace()
     for record in gen_data:
         est_value = 1.0
         flag = True
-        for i in range(lenquery):
+        for i in range(lenquery - 1):
             # check qid part
-            if flag is False:
-                break
             att_prob = 0
             index = att_select[i]
             value = value_select[i]
-            value_dict = record[index]
+            qi_dict = record[index]
             for temp in value:
                 try:
-                    att_prob += value_dict[temp]
+                    att_prob += qi_dict[temp]
                 except:
                     continue
             if abs(att_prob) <= 0.001:
-                flag = False
                 break
-            else:
-                est_value = est_value * att_prob
-        if flag is False:
-            continue
-        count += est_value
+            est_value = est_value * att_prob
+        else:
+            sa_est = 0.0
+            value = value_select[-1]
+            sa_dict = record[-1]
+            for tran in value:
+                tran_prob = 1.0
+                for t in tran:
+                    try:
+                        tran_prob *= sa_dict[t]
+                    except:
+                        break
+                else:
+                    sa_est += tran_prob
+            count += (est_value * sa_est)
     return count
 
 
@@ -151,7 +234,7 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     print "qd=%d s=%d" % (qd, s)
     print "size of raw data %d" % len(data)
     print "size of result data %d" % len(result)
-    gen_data = get_result_cover(att_trees, result[:100])
+    gen_data = get_result_cover(att_trees, result)
     are = 0.0
     len_att = len(att_trees)
     blist = []
@@ -165,10 +248,9 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
             SA_set[str_temp]
         except:
             SA_set[str_temp] = temp[-1]
-    att_cover[-1] = SA_set.keys()
+    att_cover[-1] = SA_set.values()
     seed = math.pow(s * 1.0 / 100, 1.0 / (qd + 1))
     # transform generalized result to coverage
-    tran_result = copy.deepcopy(gen_data)
     # compute b
     for i in range(len_att):
         blist.append(int(math.ceil(len(att_roots[i]) * seed)))
@@ -193,10 +275,10 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
             temp = []
             count = 0
             temp = random.sample(att_cover[index], blist[index])
-            value_select.append(set(temp))
+            value_select.append(temp)
         # pdb.set_trace()
         act = count_query(data, att_select, value_select)
-        est = est_query(tran_result, att_select, value_select)
+        est = est_query(gen_data, att_select, value_select)
         if act != 0:
             are += abs(act - est) * 1.0 / act
         else:
@@ -353,7 +435,8 @@ if __name__ == '__main__':
     elif flag == 'qd':
         evaluate_qd(file_list)
     elif flag == 'one':
-        evaluate_one(file_list, qd, s)
+        cProfile.run('evaluate_one(file_list, qd, s)')
+        # evaluate_one(file_list, qd, s)
     elif flag == 'data':
         evaluate_dataset(file_list)
     elif flag == 'k':

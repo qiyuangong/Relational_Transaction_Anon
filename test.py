@@ -3,6 +3,7 @@ import pdb
 from apriori_based_anon import apriori_based_anon
 from RT_ANON import rt_anon
 from models.gentree import GenTree
+from evaluation import count_query, est_query, get_result_cover
 
 # Build a GenTree object
 ATT_TREE = {}
@@ -127,6 +128,41 @@ class test_Apriori_based_Anon(unittest.TestCase):
         _, result = rt_anon(att_trees, data, 'RMT', 2, 2, 0.7)
         self.assertTrue(abs(result[0] - 200.0 / 3) <= 0.001)
         self.assertTrue(abs(result[1] - 0) <= 0.001)
+
+    def test_get_result_cover(self):
+        init_tree()
+        att_trees = [ATT_TREE, ATT_TREE]
+        result = [['a1', ['A', 'b1', 'b2']],
+                  ['a1', ['A', 'b1']],
+                  ['a2', ['A', 'b1', 'b2']],
+                  ['a2', ['A', 'b2']]]
+        gen_data = get_result_cover(att_trees, result)
+        temp = [[{'a1': 1.0}, {'a1': 0.5, 'a2': 0.5, 'b1': 1.0, 'b2': 1.0}],
+                [{'a1': 1.0}, {'a1': 0.5, 'a2': 0.5, 'b1': 1.0}],
+                [{'a2': 1.0}, {'a1': 0.5, 'a2': 0.5, 'b1': 1.0, 'b2': 1.0}],
+                [{'a2': 1.0}, {'a1': 0.5, 'a2': 0.5, 'b2': 1.0}]]
+        self.assertEqual(gen_data, temp)
+
+    def test_count_query(self):
+        init_tree()
+        att_trees = [ATT_TREE, ATT_TREE]
+        data = [['a1', ['a1', 'b1', 'b2']],
+                ['a1', ['a2', 'b1']],
+                ['a2', ['a2', 'b1', 'b2']],
+                ['a2', ['a1', 'a2', 'b2']]]
+        count = count_query(data, [0, 1], [['a1', 'a2'], [['a2', 'b1'], ['a1', 'b1', 'b2']]])
+        self.assertEqual(count, 2)
+
+    def test_est_query(self):
+        init_tree()
+        att_trees = [ATT_TREE, ATT_TREE]
+        result = [['a1', ['A', 'b1', 'b2']],
+                  ['a1', ['A', 'b1']],
+                  ['a2', ['A', 'b1', 'b2']],
+                  ['a2', ['A', 'b2']]]
+        gen_data = get_result_cover(att_trees, result)
+        est = est_query(gen_data, [0, 1], [['a1', 'a2'], [['a2', 'b1'], ['a1', 'b1', 'b2']]])
+        self.assertEqual(est, 2.5)
 
 if __name__ == '__main__':
     unittest.main()
