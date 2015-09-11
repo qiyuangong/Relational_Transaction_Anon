@@ -3,7 +3,7 @@ import pdb
 from apriori_based_anon import apriori_based_anon
 from RT_ANON import rt_anon
 from models.gentree import GenTree
-from evaluation import count_query, est_query, get_result_cover
+from evaluation import count_query, est_query, get_result_cover, average_relative_error
 
 # Build a GenTree object
 ATT_TREE = {}
@@ -163,6 +163,20 @@ class test_Apriori_based_Anon(unittest.TestCase):
         gen_data = get_result_cover(att_trees, result)
         est = est_query(gen_data, [0, 1], [['a1', 'a2'], [['a2', 'b1'], ['a1', 'b1', 'b2']]])
         self.assertEqual(est, 2.5)
+
+    def test_are(self):
+        init_tree()
+        att_trees = [ATT_TREE, ATT_TREE]
+        data = [['a1', ['a1', 'b1', 'b2']],
+                ['a1', ['a2', 'b1']],
+                ['a2', ['a2', 'b1', 'b2']],
+                ['a2', ['a1', 'a2', 'b2']]]
+        result = [['a1', ['A', 'b1', 'b2']],
+                  ['a1', ['A', 'b1']],
+                  ['a2', ['A', 'b1', 'b2']],
+                  ['a2', ['A', 'b2']]]
+        are = average_relative_error(att_trees, data, result, 1, 5)
+        # self.assertEqual(are, 0.5)
 
 if __name__ == '__main__':
     unittest.main()

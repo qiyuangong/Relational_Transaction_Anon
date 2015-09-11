@@ -14,9 +14,14 @@ import sys
 import cProfile
 from utils.utility import list_to_str
 
-_DEBUG = True
-QUERY_TIME = 10
+_DEBUG = False
+QUERY_TIME = 1000
 COVER_DICT = []
+# the query time for est is very long.
+# so we can use FAST_BREAK to quit the query
+# when the number of no empty query meet the mini
+# requirement.
+FAST_BREAK = 20
 
 
 def init_cover_dict(att_trees):
@@ -194,8 +199,7 @@ def est_query(gen_data, att_select, value_select):
     count = 0.0
     lenquery = len(att_select)
     for record in gen_data:
-        est_value = 1.0
-        flag = True
+        est_qi = 1.0
         for i in range(lenquery - 1):
             # check qid part
             att_prob = 0
@@ -206,12 +210,12 @@ def est_query(gen_data, att_select, value_select):
                 try:
                     att_prob += qi_dict[temp]
                 except:
-                    continue
-            if abs(att_prob) <= 0.001:
+                    pass
+            if abs(att_prob) <= 0.0001:
                 break
-            est_value = est_value * att_prob
+            est_qi = est_qi * att_prob
         else:
-            sa_est = 0.0
+            est_sa = 0.0
             value = value_select[-1]
             sa_dict = record[-1]
             for tran in value:
@@ -222,8 +226,8 @@ def est_query(gen_data, att_select, value_select):
                     except:
                         break
                 else:
-                    sa_est += tran_prob
-            count += (est_value * sa_est)
+                    est_sa += tran_prob
+            count += (est_qi * est_sa)
     return count
 
 
@@ -231,9 +235,10 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     """return average relative error of anonmized microdata,
     qd denote the query dimensionality, b denot seleciton of query
     """
-    print "qd=%d s=%d" % (qd, s)
-    print "size of raw data %d" % len(data)
-    print "size of result data %d" % len(result)
+    if _DEBUG:
+        print "qd=%d s=%d" % (qd, s)
+        print "size of raw data %d" % len(data)
+        print "size of result data %d" % len(result)
     gen_data = get_result_cover(att_trees, result)
     are = 0.0
     len_att = len(att_trees)
@@ -278,15 +283,18 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
             value_select.append(temp)
         # pdb.set_trace()
         act = count_query(data, att_select, value_select)
-        est = est_query(gen_data, att_select, value_select)
         if act != 0:
+            est = est_query(gen_data, att_select, value_select)
             are += abs(act - est) * 1.0 / act
         else:
             zeroare += 1
-    print "Times = %d when Query on microdata is Zero" % zeroare
+        if turn - zeroare == FAST_BREAK:
+            break
+    if _DEBUG:
+        print "Times = %d when Query on microdata is Zero" % zeroare
     if QUERY_TIME == zeroare:
         return 0
-    return are / (QUERY_TIME - zeroare)
+    return are / (turn - zeroare)
 
 
 def evaluate_one(file_list, qd=2, s=5):
@@ -356,9 +364,12 @@ def evaluate_dataset(file_list, qd=2, s=5):
         print '-' * 30
         pos = i * joint
         key_words = 'Size' + str(pos) + 'K10M2N'
+        print "size of dataset %d" % pos
         case_file = [t for t in file_list if key_words in t]
         are = 0.0
-        for file_name in file_list:
+        for file_name in case_file:
+            if _DEBUG:
+                print filename
             file_result = open('output/' + file_name, 'rb')
             (att_trees, data, result, K, m) = pickle.load(file_result)
             file_result.close()
@@ -372,7 +383,8 @@ def evaluate_k(file_list, qd=2, s=5):
     """
     str_list = []
     # we only compute K=5*n <= 50
-    for i in range(5, 55, 5):
+    # for i in range(5, 55, 5):
+    for i in [2, 5, 10, 25, 50, 100]:
         temp = '58568K' + str(i) + 'M2.txt'
         str_list.append(temp)
     check_list = []
