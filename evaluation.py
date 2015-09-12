@@ -21,7 +21,7 @@ COVER_DICT = []
 # so we can use FAST_BREAK to quit the query
 # when the number of no empty query meet the mini
 # requirement.
-FAST_BREAK = 20
+FAST_BREAK = 100
 
 
 def init_cover_dict(att_trees):
@@ -264,7 +264,7 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     # query times, normally it's 1000. But query 1000 need more than 10h
     # so we limited query times to 100
     zeroare = 0
-    for turn in range(QUERY_TIME):
+    for turn in range(1, QUERY_TIME + 1):
         att_select = []
         value_select = []
         i = 0
@@ -292,7 +292,8 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
             break
     if _DEBUG:
         print "Times = %d when Query on microdata is Zero" % zeroare
-    if QUERY_TIME == zeroare:
+    if turn == zeroare:
+        print "Error: all act ==0"
         return 0
     return are / (turn - zeroare)
 
@@ -329,6 +330,7 @@ def evaluate_s(file_list, qd=2):
     print "K=%d, m=%d" % (K, m)
     for s in range(1, 10):
         print '-' * 30
+        print "s", s
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
 
@@ -348,6 +350,7 @@ def evaluate_qd(file_list, s=5):
     print "K=%d, m=%d" % (K, m)
     for qd in range(1, 6):
         print '-' * 30
+        print "qd", qd
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
 
@@ -360,9 +363,12 @@ def evaluate_dataset(file_list, qd=2, s=5):
     dataset_num = 58568 / joint
     if 58568 % joint == 0:
         dataset_num += 1
+    all_are = []
+    all_data = []
     for i in range(1, dataset_num + 1):
         print '-' * 30
         pos = i * joint
+        all_data.append(pos)
         key_words = 'Size' + str(pos) + 'K10M2N'
         print "size of dataset %d" % pos
         case_file = [t for t in file_list if key_words in t]
@@ -376,6 +382,9 @@ def evaluate_dataset(file_list, qd=2, s=5):
             pre_are = average_relative_error(att_trees, data, result, qd, s)
             are += pre_are
         print "Average Relative Error for %d: %.2f%%" % (pos, are * 10)
+        all_are.append(round(are * 100, 2))
+    print "Data", all_data
+    print "ARE", all_are
 
 
 def evaluate_k(file_list, qd=2, s=5):
@@ -393,14 +402,20 @@ def evaluate_k(file_list, qd=2, s=5):
             if temp in filename:
                 check_list.append(filename)
                 break
+    all_are = []
+    all_k = []
     for file_name in check_list:
         file_result = open('output/' + file_name, 'rb')
         (att_trees, data, result, K, m) = pickle.load(file_result)
         file_result.close()
         print '-' * 30
         print "K=%d, m=%d" % (K, m)
+        all_k.append(K)
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
+        all_are.append(round(are * 100, 2))
+    print "K", all_k
+    print "ARE", all_are
 
 
 def evaluate_m(file_list, qd=2, s=5):
@@ -417,14 +432,20 @@ def evaluate_m(file_list, qd=2, s=5):
             if temp in filename:
                 check_list.append(filename)
                 break
+    all_are = []
+    all_m = []
     for file_name in check_list:
         file_result = open('output/' + file_name, 'rb')
         (att_trees, data, result, K, m) = pickle.load(file_result)
         file_result.close()
         print '-' * 30
         print "K=%d, m=%d" % (K, m)
+        all_m.append(m)
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
+        all_are.append(round(are * 100, 2))
+    print "m", all_m
+    print "ARE", all_are
 
 
 if __name__ == '__main__':

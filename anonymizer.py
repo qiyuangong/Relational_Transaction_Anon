@@ -45,6 +45,12 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
     print "m=%d" % DEFALUT_M
     print "Threshold=%.2f" % threshold
     print "Size of Data", len(data)
+    all_rncp = []
+    all_tncp = []
+    all_rtime = []
+    # for k in range(5, 55, 5):
+    #     if k in [2, 5, 10, 25, 50, 100]:
+    #         continue
     for k in [2, 5, 10, 25, 50, 100]:
         print '#' * 30
         print "K=%d" % k
@@ -52,8 +58,14 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
         save_to_file((att_tree, data, result, k, DEFALUT_M))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
+        all_rncp.append(round(eval_result[0], 2))
         print "TNCP %0.2f" % eval_result[1] + "%"
+        all_tncp.append(round(eval_result[1], 2))
         print "Running time %0.2f" % eval_result[2] + " seconds"
+        all_rtime.append(round(eval_result[2], 2))
+    print "RNCP", all_rncp
+    print "TNCP", all_tncp
+    print "Running time", all_rtime
 
 
 def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
@@ -65,6 +77,9 @@ def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
     print "Size of Data", len(data)
     data_back = copy.deepcopy(data)
     # for m in range(1, 100, 5):
+    all_rncp = []
+    all_tncp = []
+    all_rtime = []
     for m in [1, 2, 3, 4, 5, M_MAX]:
         print '#' * 30
         print "m=%d" % m
@@ -72,8 +87,14 @@ def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
         save_to_file((att_tree, data, result, k, m))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
+        all_rncp.append(round(eval_result[0], 2))
         print "TNCP %0.2f" % eval_result[1] + "%"
+        all_tncp.append(round(eval_result[1], 2))
         print "Running time %0.2f" % eval_result[2] + " seconds"
+        all_rtime.append(round(eval_result[2], 2))
+    print "RNCP", all_rncp
+    print "TNCP", all_tncp
+    print "Running time", all_rtime
 
 
 def get_result_dataset(att_tree, data, type_alg='RMR',
@@ -110,9 +131,14 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
         tncp /= num_test
         rtime /= num_test
         print "RNCP %0.2f" % rncp + "%"
+        all_rncp.append(round(rncp, 2))
         print "TNCP %0.2f" % tncp + "%"
+        all_tncp.append(round(tncp, 2))
         print "Running time %0.2f" % rtime + " seconds"
-        print '#' * 30
+        all_rtime.append(round(rtime, 2))
+    print "RNCP", all_rncp
+    print "TNCP", all_tncp
+    print "Running time", all_rtime
 
 
 if __name__ == '__main__':
