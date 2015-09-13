@@ -17,6 +17,8 @@ from utils.utility import list_to_str
 _DEBUG = False
 QUERY_TIME = 1000
 COVER_DICT = []
+DEAULT_K = 10
+DEAULT_M = 2
 # the query time for est is very long.
 # so we can use FAST_BREAK to quit the query
 # when the number of no empty query meet the mini
@@ -298,11 +300,12 @@ def average_relative_error(att_trees, data, result, qd=2, s=5):
     return are / (turn - zeroare)
 
 
-def evaluate_one(file_list, qd=2, s=5):
+def evaluate_one(file_list, k=DEAULT_K, m=DEAULT_M, qd=2, s=5):
     """run are for one time
     """
+    match_str = '58568K' + str(k) + 'M' + str(m) + '.txt'
     for t in file_list:
-        if '58568K10M2.txt' in t:
+        if match_str in t:
             file_name = t
             break
     else:
@@ -310,16 +313,18 @@ def evaluate_one(file_list, qd=2, s=5):
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
+    print "print FAST_BREAK", FAST_BREAK
     print "K=%d, m=%d" % (K, m)
     are = average_relative_error(att_trees, data, result, qd, s)
     print "Average Relative Error: %.2f%%" % (are * 100)
 
 
-def evaluate_s(file_list, qd=2):
+def evaluate_s(file_list, k=DEAULT_K, m=DEAULT_M, qd=2):
     """evaluate s, while fixing qd
     """
+    match_str = '58568K' + str(k) + 'M' + str(m) + '.txt'
     for t in file_list:
-        if '58568K10M2.txt' in t:
+        if match_str in t:
             file_name = t
             break
     else:
@@ -327,6 +332,7 @@ def evaluate_s(file_list, qd=2):
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
+    print "print FAST_BREAK", FAST_BREAK
     print "K=%d, m=%d" % (K, m)
     for s in range(1, 10):
         print '-' * 30
@@ -335,9 +341,10 @@ def evaluate_s(file_list, qd=2):
         print "Average Relative Error: %.2f%%" % (are * 100)
 
 
-def evaluate_qd(file_list, s=5):
+def evaluate_qd(file_list, k=DEAULT_K, m=DEAULT_M, s=5):
     """evaluate qd, while fixing s
     """
+    match_str = '58568K' + str(k) + 'M' + str(m) + '.txt'
     for t in file_list:
         if '58568K10M2.txt' in t:
             file_name = t
@@ -347,6 +354,7 @@ def evaluate_qd(file_list, s=5):
     file_result = open('output/' + file_name, 'rb')
     (att_trees, data, result, K, m) = pickle.load(file_result)
     file_result.close()
+    print "print FAST_BREAK", FAST_BREAK
     print "K=%d, m=%d" % (K, m)
     for qd in range(1, 6):
         print '-' * 30
@@ -355,21 +363,23 @@ def evaluate_qd(file_list, s=5):
         print "Average Relative Error: %.2f%%" % (are * 100)
 
 
-def evaluate_dataset(file_list, qd=2, s=5):
+def evaluate_dataset(file_list, k=DEAULT_K, m=DEAULT_M, qd=2, s=5):
     """evaluate dataset, while fixing qd, s, k, m
     """
-    file_list = [t for t in file_list if 'K10M2N' in t]
+    match_str = 'K' + str(k) + 'M' + str(m) + 'N'
+    file_list = [t for t in file_list if match_str in t]
     joint = 5000
     dataset_num = 58568 / joint
     if 58568 % joint == 0:
         dataset_num += 1
+    print "print FAST_BREAK", FAST_BREAK
     all_are = []
     all_data = []
     for i in range(1, dataset_num + 1):
         print '-' * 30
         pos = i * joint
         all_data.append(pos)
-        key_words = 'Size' + str(pos) + 'K10M2N'
+        key_words = 'Size' + str(pos) + 'K' + str(k) + 'M' + str(m) + 'N'
         print "size of dataset %d" % pos
         case_file = [t for t in file_list if key_words in t]
         are = 0.0
@@ -387,14 +397,14 @@ def evaluate_dataset(file_list, qd=2, s=5):
     print "ARE", all_are
 
 
-def evaluate_k(file_list, qd=2, s=5):
+def evaluate_k(file_list, m=DEAULT_M, qd=2, s=5):
     """evaluate K, while fixing m, qd, s
     """
     str_list = []
     # we only compute K=5*n <= 50
-    # for i in range(5, 55, 5):
-    for i in [2, 5, 10, 25, 50, 100]:
-        temp = '58568K' + str(i) + 'M2.txt'
+    # for i in [2, 5, 10, 25, 50, 100]:
+    for i in range(5, 55, 5):
+        temp = '58568K' + str(i) + 'M' + str(m) + '.txt'
         str_list.append(temp)
     check_list = []
     for filename in file_list:
@@ -404,6 +414,7 @@ def evaluate_k(file_list, qd=2, s=5):
                 break
     all_are = []
     all_k = []
+    print "print FAST_BREAK", FAST_BREAK
     for file_name in check_list:
         file_result = open('output/' + file_name, 'rb')
         (att_trees, data, result, K, m) = pickle.load(file_result)
@@ -434,6 +445,7 @@ def evaluate_m(file_list, qd=2, s=5):
                 break
     all_are = []
     all_m = []
+    print "print FAST_BREAK", FAST_BREAK
     for file_name in check_list:
         file_result = open('output/' + file_name, 'rb')
         (att_trees, data, result, K, m) = pickle.load(file_result)
@@ -455,8 +467,6 @@ if __name__ == '__main__':
     s = 5
     try:
         flag = sys.argv[1]
-        qd = int(sys.argv[2])
-        s = int(sys.argv[3])
     except:
         pass
     file_list = []
@@ -467,8 +477,8 @@ if __name__ == '__main__':
         evaluate_s(file_list)
     elif flag == 'qd':
         evaluate_qd(file_list)
-    elif flag == 'one':
-        cProfile.run('evaluate_one(file_list, qd, s)')
+    elif flag == '':
+        cProfile.run('evaluate_one(file_list)')
         # evaluate_one(file_list, qd, s)
     elif flag == 'data':
         evaluate_dataset(file_list)
@@ -476,7 +486,9 @@ if __name__ == '__main__':
         evaluate_k(file_list)
     elif flag == 'm':
         evaluate_m(file_list)
-    elif flag == '':
-        evaluate_one(file_list)
     else:
-        print "Usage: python evaluation [qd | s | one | data | k |m]"
+        try:
+            INPUT_K = int(sys.argv[1])
+            evaluate_one(file_list, INPUT_K)
+        except:
+            print "Usage: python evaluation [qd | s | data | k |m]"

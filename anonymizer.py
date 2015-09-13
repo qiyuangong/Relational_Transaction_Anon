@@ -27,10 +27,10 @@ def get_result_one(att_tree, data, type_alg, k=DEFALUT_K, m=DEFALUT_M, threshold
     """
     print "K=%d" % k
     print "Size of Data", len(data)
-    print "m=%d" % DEFALUT_M
+    print "m=%d" % m
     print "Threshold=%.2f" % threshold
     result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
-    # save_to_file((att_tree, data, result, k, DEFALUT_M))
+    save_to_file((att_tree, data, result, k, m))
     print "RNCP %0.2f" % eval_result[0] + "%"
     print "TNCP %0.2f" % eval_result[1] + "%"
     print "Running time %0.2f" % eval_result[2] + " seconds"
@@ -42,7 +42,7 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
     """
     data_back = copy.deepcopy(data)
     # for k in range(5, 105, 5):
-    print "m=%d" % DEFALUT_M
+    print "m=%d" % m
     print "Threshold=%.2f" % threshold
     print "Size of Data", len(data)
     all_rncp = []
@@ -55,7 +55,7 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
         print '#' * 30
         print "K=%d" % k
         result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
-        save_to_file((att_tree, data, result, k, DEFALUT_M))
+        save_to_file((att_tree, data, result, k, m))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
         all_rncp.append(round(eval_result[0], 2))
@@ -104,7 +104,7 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
     num_test is the test nubmber.
     """
     print "K=%d" % k
-    print "m=%d" % DEFALUT_M
+    print "m=%d" % m
     print "Threshold=%.2f" % threshold
     data_back = copy.deepcopy(data)
     length = len(data_back)
@@ -122,7 +122,7 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
         for j in range(num_test):
             temp = random.sample(data, pos)
             result, eval_result = rt_anon(att_tree, temp, type_alg, k, m, threshold)
-            save_to_file((att_tree, temp, result, k, DEFALUT_M), number=j)
+            save_to_file((att_tree, temp, result, k, m), number=j)
             rncp += eval_result[0]
             tncp += eval_result[1]
             rtime += eval_result[2]
