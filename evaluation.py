@@ -338,7 +338,7 @@ def evaluate_s(file_list, k=DEFAULT_K, m=DEFAULT_M, qd=DEFAULT_QD):
     print "print FAST_BREAK", FAST_BREAK
     for s in range(1, 10):
         print '-' * 30
-        print "s", s
+        print "s=", s
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
 
@@ -360,7 +360,7 @@ def evaluate_qd(file_list, k=DEFAULT_K, m=DEFAULT_M, s=DEFAULT_S):
     print "print FAST_BREAK", FAST_BREAK
     for qd in range(1, 6):
         print '-' * 30
-        print "qd", qd
+        print "qd=", qd
         are = average_relative_error(att_trees, data, result, qd, s)
         print "Average Relative Error: %.2f%%" % (are * 100)
 
@@ -374,7 +374,7 @@ def evaluate_dataset(file_list, k=DEFAULT_K, m=DEFAULT_M, qd=DEFAULT_QD, s=DEFAU
     dataset_num = 58568 / joint
     if 58568 % joint == 0:
         dataset_num += 1
-    print "K=%d, m=%d" % (K, m)
+    print "K=%d, m=%d" % (k, m)
     print "print FAST_BREAK", FAST_BREAK
     all_are = []
     all_data = []
