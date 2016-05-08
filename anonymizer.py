@@ -4,8 +4,12 @@ run DA and AA with given parameters
 #!/usr/bin/env python
 # coding=utf-8
 from RT_ANON import rt_anon
-from utils.read_data import read_data, read_tree
+from utils.read_informs_data import read_data as read_informs
+from utils.read_informs_data import read_tree as read_informs_tree
+from utils.read_youtube_data import read_data as read_youtube
+from utils.read_youtube_data import read_tree as read_youtube
 from models.gentree import GenTree
+from utils.maketree import gen_informs_gh_trees
 from utils.save_result import save_to_file
 import sys
 import copy
@@ -120,6 +124,9 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
     for i in range(check_time):
         datasets.append(joint * (i + 1))
     # datasets.append(length)
+    all_rncp = []
+    all_tncp = []
+    all_rtime = []
     for pos in datasets:
         rncp = tncp = rtime = 0
         if pos > length:
@@ -152,17 +159,29 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
 if __name__ == '__main__':
     # set K=10 as default
     FLAG = ''
+    DATA_SELECT = 'i'
     # gen_even_BMS_tree(5)
     try:
-        TYPE_ALG = sys.argv[1]
-        FLAG = sys.argv[2]
+        DATA_SELECT = sys.argv[1]
+        TYPE_ALG = sys.argv[2]
+        FLAG = sys.argv[3]
     except IndexError:
         pass
+    gen_informs_gh_trees()
     INPUT_K = 10
     print "*" * 30
-    ATT_TREES = read_tree()
-    # read record
-    DATA = read_data()
+    if DATA_SELECT == 'i':
+        print "INFORMS data"
+        DATA = read_informs()
+        ATT_TREES = read_informs_tree()
+    elif DATA_SELECT == 'y':
+        print "Youtube data"
+        DATA = read_youtube()
+        ATT_TREES = read_youtube_tree()
+    else:
+        print "INFORMS data"
+        DATA = read_informs()
+        ATT_TREES = read_informs_tree()
     # read generalization hierarchy
     # read record
     # remove duplicate items
@@ -174,6 +193,8 @@ if __name__ == '__main__':
     #         DATA[i] = list(set(DATA[i][:40]))
     for i in range(len(DATA)):
         DATA[i][-1] = list(set(DATA[i][-1]))
+    print "Begin to run", TYPE_ALG
+    print "*" * 10
     # print "Begin Apriori based Anon"
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)

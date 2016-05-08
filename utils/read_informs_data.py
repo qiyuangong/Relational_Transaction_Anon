@@ -21,7 +21,7 @@ def read_tree(flag=0):
     for t in gl_attlist:
         att_names.append(gl_useratt[t])
     if flag:
-        att_names.append(gl_conditionatt[2])
+        att_names.append('ICD9')
     else:
         att_names.append('even')
     for t in att_names:
@@ -33,7 +33,7 @@ def read_tree_file(treename):
     """read tree data from treename"""
     leaf_to_path = {}
     att_tree = {}
-    prefix = 'data/treefile_'
+    prefix = 'data/informs_'
     postfix = ".txt"
     treefile = open(prefix + treename + postfix, 'rU')
     att_tree['*'] = GenTree('*')
