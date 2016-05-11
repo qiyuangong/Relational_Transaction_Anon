@@ -7,9 +7,9 @@ from RT_ANON import rt_anon
 from utils.read_informs_data import read_data as read_informs
 from utils.read_informs_data import read_tree as read_informs_tree
 from utils.read_youtube_data import read_data as read_youtube
-from utils.read_youtube_data import read_tree as read_youtube
+from utils.read_youtube_data import read_tree as read_youtube_tree
 from models.gentree import GenTree
-from utils.maketree import gen_informs_gh_trees
+from utils.maketree import gen_gh_trees
 from utils.save_result import save_to_file
 import sys
 import copy
@@ -167,20 +167,22 @@ if __name__ == '__main__':
         FLAG = sys.argv[3]
     except IndexError:
         pass
-    gen_informs_gh_trees()
     INPUT_K = 10
     print "*" * 30
     if DATA_SELECT == 'i':
         print "INFORMS data"
         DATA = read_informs()
+        # gen_gh_trees(DATA_SELECT)
         ATT_TREES = read_informs_tree()
     elif DATA_SELECT == 'y':
         print "Youtube data"
         DATA = read_youtube()
+        # gen_gh_trees(DATA_SELECT)
         ATT_TREES = read_youtube_tree()
     else:
         print "INFORMS data"
         DATA = read_informs()
+        # gen_gh_trees(DATA_SELECT)
         ATT_TREES = read_informs_tree()
     # read generalization hierarchy
     # read record

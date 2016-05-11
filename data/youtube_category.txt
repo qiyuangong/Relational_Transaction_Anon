@@ -1,0 +1,13 @@
+Autos&Vehicles;*
+Comedy;*
+Entertainment;*
+Film&Animation;*
+Gadgets&Games;*
+Howto&DIY;*
+Music;*
+News&Politics;*
+People&Blogs;*
+Pets&Animals;*
+Sports;*
+Travel&Places;*
+UNA;*
