@@ -21,9 +21,9 @@ def read_data():
     """
     QI_num = len(QI_INDEX)
     data = []
-    numeric_dict = []
     sa_index = 0
     sa_dict = {}
+    numeric_dict = []
     for i in range(QI_num):
         numeric_dict.append(dict())
     # oder categorical attributes in intuitive order
@@ -45,23 +45,22 @@ def read_data():
         sa_index += 1
         for i in range(QI_num):
             index = QI_INDEX[i]
-            if IS_CAT[i] is False:
+            if index in [2, 4, 5, 6, 7, 8]:
                 try:
                     numeric_dict[i][temp[index]] += 1
                 except KeyError:
                     numeric_dict[i][temp[index]] = 1
             ltemp.append(temp[index])
-        # add first 10 related id as a list
-        ltemp.append(temp[9:][:10])
+        # add all related id as a list
+        ltemp.append(temp[9:])
         data.append(ltemp)
     # pickle numeric attributes
     for i in range(QI_num):
-        if IS_CAT[i] is False:
-            static_file = open('data/youtube_' + ATT_NAMES[QI_INDEX[i]] + '_static.pickle', 'wb')
-            sort_value = list(numeric_dict[i].keys())
-            sort_value.sort(cmp=cmp_str)
-            pickle.dump((numeric_dict[i], sort_value), static_file)
-            static_file.close()
+        if QI_INDEX[i] in [2, 4, 5, 6, 7, 8]:
+            with open('data/youtube_' + ATT_NAMES[QI_INDEX[i]] + '_static.pickle', 'wb') as static_file:
+                sort_value = list(numeric_dict[i].keys())
+                sort_value.sort(cmp=cmp_str)
+                pickle.dump((numeric_dict[i], sort_value), static_file)
     final_data = []
     for record in data:
         related_id = record[7]
@@ -80,7 +79,7 @@ def read_data():
             record[7] = temp
             final_data.append(record)
     # pickle sa
-    if os.path.isfile('youtube_related_ID_static.pickle') is True:
+    if os.path.isfile('youtube_related_ID_static.pickle') is False:
         with open('data/youtube_related_ID_static.pickle', 'wb') as static_file:
             sort_value = list(sa_dict.values())
             sort_value.sort(cmp=cmp_str)
