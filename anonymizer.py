@@ -19,13 +19,13 @@ import pdb
 
 sys.setrecursionlimit(50000)
 TYPE_ALG = 'RMR'
-DEFALUT_M = 2
+DEFAULT_M = 2
 M_MAX = 161
-DEFALUT_K = 10
-DEFALUT_T = 0.65
+DEFAULT_K = 10
+DEFAULT_T = 0.65
 
 
-def get_result_one(att_tree, data, type_alg, k=DEFALUT_K, m=DEFALUT_M, threshold=DEFALUT_T):
+def get_result_one(att_tree, data, type_alg, k=DEFAULT_K, m=DEFAULT_M, threshold=DEFAULT_T):
     """
     run RT_ANON for one time, with k=10
     """
@@ -40,7 +40,7 @@ def get_result_one(att_tree, data, type_alg, k=DEFALUT_K, m=DEFALUT_M, threshold
     print "Running time %0.2f" % eval_result[2] + " seconds"
 
 
-def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
+def get_result_k(att_tree, data, type_alg, m=DEFAULT_M, threshold=DEFAULT_T):
     """
     change k, whle fixing size of dataset
     """
@@ -74,7 +74,7 @@ def get_result_k(att_tree, data, type_alg, m=DEFALUT_M, threshold=DEFALUT_T):
     print "Running time", all_rtime
 
 
-def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
+def get_result_m(att_tree, data, type_alg, k=DEFAULT_K, threshold=DEFAULT_T):
     """
     change k, whle fixing size of dataset
     """
@@ -106,7 +106,7 @@ def get_result_m(att_tree, data, type_alg, k=DEFALUT_K, threshold=DEFALUT_T):
 
 
 def get_result_dataset(att_tree, data, type_alg='RMR',
-                       k=DEFALUT_K, m=DEFALUT_M, threshold=DEFALUT_T, num_test=10):
+                       k=DEFAULT_K, m=DEFAULT_M, threshold=DEFAULT_T, num_test=10):
     """
     fix k, while changing size of dataset
     num_test is the test nubmber.
@@ -203,7 +203,15 @@ if __name__ == '__main__':
     elif FLAG == 'm':
         get_result_m(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'data':
-        get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
+        k = DEFAULT_K
+        try:
+            k = int(sys.argv[4])
+        except:
+            pass
+        if k != DEFAULT_K:
+            get_result_dataset(ATT_TREES, DATA, TYPE_ALG, k)
+        else:
+            get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
         # cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
         get_result_one(ATT_TREES, DATA, TYPE_ALG)
