@@ -34,7 +34,7 @@ def get_result_one(att_tree, data, type_alg, k=DEFAULT_K, m=DEFAULT_M, threshold
     print "m=%d" % m
     print "Threshold=%.2f" % threshold
     result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
-    save_to_file((att_tree, data, result, k, m))
+    # save_to_file((att_tree, data, result, k, m))
     print "RNCP %0.2f" % eval_result[0] + "%"
     print "TNCP %0.2f" % eval_result[1] + "%"
     print "Running time %0.2f" % eval_result[2] + " seconds"
@@ -60,7 +60,7 @@ def get_result_k(att_tree, data, type_alg, m=DEFAULT_M, threshold=DEFAULT_T):
         print '#' * 30
         print "K=%d" % k
         result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
-        save_to_file((att_tree, data, result, k, m))
+        # save_to_file((att_tree, data, result, k, m))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
         all_rncp.append(round(eval_result[0], 2))
@@ -91,7 +91,7 @@ def get_result_m(att_tree, data, type_alg, k=DEFAULT_K, threshold=DEFAULT_T):
         print '#' * 30
         print "m=%d" % m
         result, eval_result = rt_anon(att_tree, data, type_alg, k, m, threshold)
-        save_to_file((att_tree, data, result, k, m))
+        # save_to_file((att_tree, data, result, k, m))
         data = copy.deepcopy(data_back)
         print "RNCP %0.2f" % eval_result[0] + "%"
         all_rncp.append(round(eval_result[0], 2))
@@ -100,6 +100,37 @@ def get_result_m(att_tree, data, type_alg, k=DEFAULT_K, threshold=DEFAULT_T):
         print "Running time %0.2f" % eval_result[2] + " seconds"
         all_rtime.append(round(eval_result[2], 2))
     print "m range", m_range
+    print "RNCP", all_rncp
+    print "TNCP", all_tncp
+    print "Running time", all_rtime
+
+
+def get_result_t(att_tree, data, type_alg, k=DEFAULT_K,  m=DEFAULT_M):
+    """
+    change k, whle fixing size of dataset
+    """
+    print "K=%d" % k
+    print "m=%d" % m
+    print "Size of Data", len(data)
+    data_back = copy.deepcopy(data)
+    # for m in range(1, 100, 5):
+    all_rncp = []
+    all_tncp = []
+    all_rtime = []
+    t_range = [0.15, 0.25, 0.4, 0.65]
+    for t in t_range:
+        print '#' * 30
+        print "Threshold=%.2f" % t
+        result, eval_result = rt_anon(att_tree, data, type_alg, k, m, t)
+        # save_to_file((att_tree, data, result, k, m))
+        data = copy.deepcopy(data_back)
+        print "RNCP %0.2f" % eval_result[0] + "%"
+        all_rncp.append(round(eval_result[0], 2))
+        print "TNCP %0.2f" % eval_result[1] + "%"
+        all_tncp.append(round(eval_result[1], 2))
+        print "Running time %0.2f" % eval_result[2] + " seconds"
+        all_rtime.append(round(eval_result[2], 2))
+    print "threshold range", t_range
     print "RNCP", all_rncp
     print "TNCP", all_tncp
     print "Running time", all_rtime
@@ -136,7 +167,7 @@ def get_result_dataset(att_tree, data, type_alg='RMR',
         for j in range(num_test):
             temp = random.sample(data, pos)
             result, eval_result = rt_anon(att_tree, temp, type_alg, k, m, threshold)
-            save_to_file((att_tree, temp, result, k, m), number=j)
+            # save_to_file((att_tree, temp, result, k, m), number=j)
             rncp += eval_result[0]
             tncp += eval_result[1]
             rtime += eval_result[2]
@@ -202,6 +233,8 @@ if __name__ == '__main__':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'm':
         get_result_m(ATT_TREES, DATA, TYPE_ALG)
+    elif FLAG == 't':
+        get_result_t(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'data':
         k = DEFAULT_K
         try:
