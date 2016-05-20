@@ -10,9 +10,9 @@ import pdb
 
 __DEBUG = False
 ATT_NAMES = ['video_ID', 'uploader', 'age', 'category', 'length',
-             'views', 'rate', 'ratings', 'comments', '']
-QI_INDEX = [2, 3, 4, 5, 6, 7, 8]
-IS_CAT = [True, True, True, True, True, True, True, True]
+             'views', 'rate', 'ratings', 'comments', 'related_ID']
+QI_INDEX = [2, 3, 4, 6, 7, 8]
+IS_CAT = [True, True, True, True, True, True, True]
 SA_INDEX = 9
 
 def read_data():
@@ -45,7 +45,7 @@ def read_data():
         sa_index += 1
         for i in range(QI_num):
             index = QI_INDEX[i]
-            if index in [2, 4, 5, 6, 7, 8]:
+            if index in [2, 4, 6, 7, 8]:
                 try:
                     numeric_dict[i][temp[index]] += 1
                 except KeyError:
@@ -56,14 +56,14 @@ def read_data():
         data.append(ltemp)
     # pickle numeric attributes
     for i in range(QI_num):
-        if QI_INDEX[i] in [2, 4, 5, 6, 7, 8]:
+        if QI_INDEX[i] in [2, 4, 6, 7, 8]:
             with open('data/youtube_' + ATT_NAMES[QI_INDEX[i]] + '_static.pickle', 'wb') as static_file:
                 sort_value = list(numeric_dict[i].keys())
                 sort_value.sort(cmp=cmp_str)
                 pickle.dump((numeric_dict[i], sort_value), static_file)
     final_data = []
     for record in data:
-        related_id = record[7]
+        related_id = record[-1]
         temp = []
         for v_id in related_id:
             try:
@@ -76,7 +76,7 @@ def read_data():
                 pass
         if len(temp) > 0:
             # remove records with empty related id
-            record[7] = temp
+            record[-1] = temp
             final_data.append(record)
     # pickle sa
     if os.path.isfile('youtube_related_ID_static.pickle') is False:
